@@ -1,4 +1,6 @@
-use std::fmt::Debug;
+#![allow(dead_code)]
+
+use std::{cell::RefCell, fmt::Debug, ops::Deref, rc::Rc};
 
 pub struct Queue<T> {
     vec: Vec<Option<T>>,
@@ -74,5 +76,60 @@ impl<T: Debug> Debug for Queue<T> {
             }
         }
         Ok(())
+    }
+}
+
+#[derive(Debug)]
+struct Node<T> {
+    val: T,
+    next: Option<Rc<RefCell<Node<T>>>>,
+}
+
+#[derive(Debug)]
+pub struct LinkedList<T> {
+    head: Option<Rc<RefCell<Node<T>>>>,
+    tail: Option<Rc<RefCell<Node<T>>>>,
+    size: usize,
+}
+
+impl<T: Clone> LinkedList<T> {
+    pub fn new() -> Self {
+        LinkedList {
+            head: None,
+            tail: None,
+            size: 0,
+        }
+    }
+    pub fn is_empty(&self) -> bool {
+        self.size == 0
+    }
+    pub fn push(&mut self, val: T) {
+        let new_node = Rc::new(RefCell::new(Node { val, next: None }));
+        if self.is_empty() {
+            self.head = Some(new_node.clone());
+            self.tail = Some(new_node);
+        } else {
+            if let Some(ref tail_node) = self.tail {
+                tail_node.deref().borrow_mut().next = Some(new_node.clone());
+            }
+            self.tail = Some(new_node);
+        }
+        self.size += 1;
+    }
+    pub fn head(&self) -> Option<T> {
+        if let Some(head_node) = &self.head {
+            let b = head_node.borrow();
+            Some(b.val.clone())
+        } else {
+            None
+        }
+    }
+    pub fn tail(&self) -> Option<T> {
+        if let Some(tail_node) = &self.tail {
+            let b = tail_node.borrow();
+            Some(b.val.clone())
+        } else {
+            None
+        }
     }
 }

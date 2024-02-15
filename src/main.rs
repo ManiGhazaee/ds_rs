@@ -1,10 +1,11 @@
-use ds_rs::Queue;
+use ds_rs::LinkedList;
+
 
 fn main() {
-    let mut q: Queue<Vec<&str>> = Queue::new(10);
-    q.enq(vec!["v1"]).unwrap();
-    q.enq(vec!["v2"]).unwrap();
-    q.enq(vec!["v3"]).unwrap();
-    q.enq(vec!["v4"]).unwrap();
-    println!("{:?}", q);
+    let mut ll: LinkedList<&str> = LinkedList::new(); 
+
+    ll.push("v1");
+    ll.push("v2");
+    dbg!(&ll.head());
+    dbg!(&ll.tail());
 }
