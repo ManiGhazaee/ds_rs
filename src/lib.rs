@@ -1,6 +1,11 @@
 #![allow(dead_code)]
 
-use std::{cell::RefCell, fmt::Debug, ops::Deref, rc::Rc};
+use std::{
+    cell::{Ref, RefCell},
+    fmt::Debug,
+    ops::Deref,
+    rc::Rc,
+};
 
 pub struct Queue<T> {
     vec: Vec<Option<T>>,
@@ -103,7 +108,10 @@ impl<T: Clone> LinkedList<T> {
     pub fn is_empty(&self) -> bool {
         self.size == 0
     }
-    pub fn push(&mut self, val: T) {
+    pub fn size(&self) -> usize {
+        self.size
+    }
+    pub fn add(&mut self, val: T) {
         let new_node = Rc::new(RefCell::new(Node { val, next: None }));
         if self.is_empty() {
             self.head = Some(new_node.clone());
@@ -116,9 +124,68 @@ impl<T: Clone> LinkedList<T> {
         }
         self.size += 1;
     }
+    pub fn push(&mut self, val: T) {
+        self.head = Some(Rc::new(RefCell::new(Node {
+            val,
+            next: self.head.clone(),
+        })));
+        self.size += 1;
+    }
+    pub fn insert(&mut self, index: usize, val: T) -> Result<(), ()> {
+        if index > self.size {
+            Err(())
+        } else {
+            if index == 0 {
+                self.push(val);
+                return Ok(());
+            }
+            if index == self.size {
+                self.add(val);
+                return Ok(());
+            }
+            let mut i = 0;
+            let mut before = self.head.clone();
+            while i < index - 1 {
+                if let Some(t) = before {
+                    let b = t.borrow();
+                    before = b.next.clone();
+                }
+                i += 1;
+            }
+            let ref_cell = before.clone().unwrap();
+            let after = ref_cell.borrow().next.clone().unwrap();
+            let before = before.unwrap();
+            let new_node = Rc::new(RefCell::new(Node {
+                val,
+                next: Some(after),
+            }));
+
+            before.borrow_mut().next = Some(new_node.clone());
+            self.size += 1;
+
+            Ok(())
+        }
+    }
+    pub fn get(&self, index: usize) -> Option<T> {
+        if index >= self.size {
+            return None;
+        }
+        let mut i = 0;
+        let mut temp = self.head.clone();
+        while i < index {
+            if let Some(t) = temp {
+                let b = t.borrow();
+                temp = b.next.clone();
+            }
+            i += 1;
+        }
+        let temp = temp.unwrap();
+        let ret = Some(temp.borrow().val.clone());
+        ret
+    }
     pub fn head(&self) -> Option<T> {
         if let Some(head_node) = &self.head {
-            let b = head_node.borrow();
+            let b: Ref<Node<T>> = head_node.borrow();
             Some(b.val.clone())
         } else {
             None
@@ -126,7 +193,7 @@ impl<T: Clone> LinkedList<T> {
     }
     pub fn tail(&self) -> Option<T> {
         if let Some(tail_node) = &self.tail {
-            let b = tail_node.borrow();
+            let b: Ref<Node<T>> = tail_node.borrow();
             Some(b.val.clone())
         } else {
             None
