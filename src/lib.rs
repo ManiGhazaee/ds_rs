@@ -3,7 +3,6 @@
 use std::{
     cell::{Ref, RefCell},
     fmt::Debug,
-    ops::Deref,
     rc::Rc,
 };
 
@@ -84,24 +83,23 @@ impl<T: Debug> Debug for Queue<T> {
     }
 }
 
-#[derive(Debug)]
 struct Node<T> {
     val: T,
     next: Option<Rc<RefCell<Node<T>>>>,
+    prev: Option<Rc<RefCell<Node<T>>>>,
 }
 
-#[derive(Debug)]
 pub struct LinkedList<T> {
-    head: Option<Rc<RefCell<Node<T>>>>,
-    tail: Option<Rc<RefCell<Node<T>>>>,
+    front: Option<Rc<RefCell<Node<T>>>>,
+    back: Option<Rc<RefCell<Node<T>>>>,
     size: usize,
 }
 
 impl<T: Clone> LinkedList<T> {
     pub fn new() -> Self {
         LinkedList {
-            head: None,
-            tail: None,
+            front: None,
+            back: None,
             size: 0,
         }
     }
@@ -111,67 +109,93 @@ impl<T: Clone> LinkedList<T> {
     pub fn size(&self) -> usize {
         self.size
     }
-    pub fn add(&mut self, val: T) {
-        let new_node = Rc::new(RefCell::new(Node { val, next: None }));
-        if self.is_empty() {
-            self.head = Some(new_node.clone());
-            self.tail = Some(new_node);
-        } else {
-            if let Some(ref tail_node) = self.tail {
-                tail_node.deref().borrow_mut().next = Some(new_node.clone());
-            }
-            self.tail = Some(new_node);
-        }
-        self.size += 1;
-    }
-    pub fn push(&mut self, val: T) {
-        self.head = Some(Rc::new(RefCell::new(Node {
+    pub fn push_back(&mut self, val: T) {
+        let new_node = Rc::new(RefCell::new(Node {
             val,
-            next: self.head.clone(),
-        })));
+            next: None,
+            prev: self.back.clone(),
+        }));
+        if self.is_empty() {
+            self.front = Some(new_node.clone());
+            self.back = Some(new_node);
+        } else {
+            if let Some(back_node) = self.back.clone() {
+                back_node.borrow_mut().next = Some(new_node.clone());
+            }
+            self.back = Some(new_node);
+        }
         self.size += 1;
     }
-    pub fn insert(&mut self, index: usize, val: T) -> Result<(), ()> {
-        if index > self.size {
-            Err(())
+    pub fn push_front(&mut self, val: T) {
+        let new_node = Some(Rc::new(RefCell::new(Node {
+            val,
+            next: self.front.clone(),
+            prev: None,
+        })));
+
+        if self.is_empty() {
+            self.front = new_node.clone();
+            self.back = new_node;
         } else {
-            if index == 0 {
-                self.push(val);
-                return Ok(());
-            }
-            if index == self.size {
-                self.add(val);
-                return Ok(());
-            }
-            let mut i = 0;
-            let mut before = self.head.clone();
-            while i < index - 1 {
-                if let Some(t) = before {
-                    let b = t.borrow();
-                    before = b.next.clone();
-                }
-                i += 1;
-            }
-            let ref_cell = before.clone().unwrap();
-            let after = ref_cell.borrow().next.clone().unwrap();
-            let before = before.unwrap();
-            let new_node = Rc::new(RefCell::new(Node {
-                val,
-                next: Some(after),
-            }));
-
-            before.borrow_mut().next = Some(new_node.clone());
-            self.size += 1;
-
-            Ok(())
+            self.front.clone().unwrap().borrow_mut().prev = new_node.clone();
+            self.front = new_node;
         }
+        self.size += 1;
+    }
+    pub fn pop_front(&mut self) {
+        if !self.is_empty() {
+            if let Some(front) = self.front.clone() {
+                self.front = front.borrow().next.clone();
+                self.front.clone().unwrap().borrow_mut().prev = None;
+                self.size -= 1;
+            }
+        }
+    }
+    pub fn clear(&mut self) {
+        self.front = None;
+        self.back = None;
+        self.size = 0;
+    }
+    /// # Panics
+    /// if `index > size`
+    pub fn insert(&mut self, index: usize, val: T) {
+        if index > self.size {
+            panic!("index > LinkedList.size");
+        }
+        if index == 0 {
+            self.push_front(val);
+            return;
+        }
+        if index == self.size {
+            self.push_back(val);
+            return;
+        }
+        let mut i = 0;
+        let mut before = self.front.clone();
+        while i < index - 1 {
+            if let Some(t) = before {
+                let b = t.borrow();
+                before = b.next.clone();
+            }
+            i += 1;
+        }
+        let ref_cell = before.clone().unwrap();
+        let after = ref_cell.borrow().next.clone().unwrap();
+        let before = before.unwrap();
+        let new_node = Rc::new(RefCell::new(Node {
+            val,
+            next: Some(after),
+            prev: Some(before.clone()),
+        }));
+        before.borrow_mut().next = Some(new_node.clone());
+        self.size += 1;
     }
     pub fn get(&self, index: usize) -> Option<T> {
         if index >= self.size {
             return None;
         }
         let mut i = 0;
-        let mut temp = self.head.clone();
+        let mut temp = self.front.clone();
         while i < index {
             if let Some(t) = temp {
                 let b = t.borrow();
@@ -183,20 +207,38 @@ impl<T: Clone> LinkedList<T> {
         let ret = Some(temp.borrow().val.clone());
         ret
     }
-    pub fn head(&self) -> Option<T> {
-        if let Some(head_node) = &self.head {
-            let b: Ref<Node<T>> = head_node.borrow();
+    pub fn front(&self) -> Option<T> {
+        if let Some(front_node) = &self.front {
+            let b: Ref<Node<T>> = front_node.borrow();
             Some(b.val.clone())
         } else {
             None
         }
     }
-    pub fn tail(&self) -> Option<T> {
-        if let Some(tail_node) = &self.tail {
-            let b: Ref<Node<T>> = tail_node.borrow();
+    pub fn back(&self) -> Option<T> {
+        if let Some(back_node) = &self.back {
+            let b: Ref<Node<T>> = back_node.borrow();
             Some(b.val.clone())
         } else {
             None
         }
+    }
+}
+
+impl<T: Debug + Clone> Debug for LinkedList<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut idx = 0;
+        let mut temp = self.front.clone();
+        while let Some(n) = temp {
+            let b = n.borrow();
+            temp = b.next.clone();
+            let val = b.val.clone();
+            let w = writeln!(f, "{}: {:?}", idx, val);
+            if let Err(e) = w {
+                return Err(e);
+            }
+            idx += 1;
+        }
+        Ok(())
     }
 }
