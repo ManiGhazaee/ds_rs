@@ -83,7 +83,7 @@ impl<T: Debug> Debug for Queue<T> {
     }
 }
 
-struct Node<T> {
+pub struct Node<T> {
     val: T,
     next: Option<Rc<RefCell<Node<T>>>>,
     prev: Option<Rc<RefCell<Node<T>>>>,
@@ -106,7 +106,7 @@ impl<T: Clone> LinkedList<T> {
     pub fn is_empty(&self) -> bool {
         self.size == 0
     }
-    pub fn size(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.size
     }
     pub fn push_back(&mut self, val: T) {
@@ -151,6 +151,15 @@ impl<T: Clone> LinkedList<T> {
             }
         }
     }
+    pub fn pop_back(&mut self) {
+        if !self.is_empty() {
+            if let Some(back) = self.back.clone() {
+                self.back = back.borrow().prev.clone();
+                self.back.clone().unwrap().borrow_mut().next = None;
+                self.size -= 1;
+            }
+        }
+    }
     pub fn clear(&mut self) {
         self.front = None;
         self.back = None;
@@ -160,7 +169,7 @@ impl<T: Clone> LinkedList<T> {
     /// if `index > size`
     pub fn insert(&mut self, index: usize, val: T) {
         if index > self.size {
-            panic!("index > LinkedList.size");
+            panic!("index > size");
         }
         if index == 0 {
             self.push_front(val);
@@ -222,6 +231,28 @@ impl<T: Clone> LinkedList<T> {
         } else {
             None
         }
+    }
+    pub fn append(&mut self, other: &mut LinkedList<T>) {
+        let other_front = other.front.clone();
+        other_front.clone().unwrap().borrow_mut().prev = self.back.clone();
+        self.back.clone().unwrap().borrow_mut().next = other_front;
+        self.size += other.size;
+        other.size = 0;
+        other.back = None;
+        other.front = None;
+    }
+}
+
+impl<T: PartialEq> LinkedList<T> {
+    pub fn contains(&self, val: T) -> bool {
+        let mut temp = self.front.clone();
+        while let Some(n) = temp {
+            if val == n.borrow().val {
+                return true;
+            }
+            temp = n.borrow().next.clone();
+        }
+        false
     }
 }
 
