@@ -214,6 +214,42 @@ impl<T: Debug + Clone> Debug for LinkedList<T> {
     }
 }
 
+impl<T> Clone for LinkedList<T> {
+    fn clone(&self) -> Self {
+        Self {
+            front: option_rc_clone(&self.front),
+            back: option_rc_clone(&self.back),
+            size: self.size.clone(),
+        }
+    }
+}
+
+pub struct Iter<T> {
+    current: Option<Rc<RefCell<Node<T>>>>,
+}
+
+impl<T> LinkedList<T> {
+    pub fn iter(&self) -> Iter<T> {
+        Iter {
+            current: option_rc_clone(&self.front),
+        }
+    }
+}
+
+impl<T: Clone> Iterator for Iter<T> {
+    type Item = T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some(current) = option_rc_clone(&self.current) {
+            let ret = Some(current.borrow().val.clone());
+            self.current = option_rc_clone(&current.borrow().next);
+            ret
+        } else {
+            None
+        }
+    }
+}
+
 #[inline]
 fn option_rc_clone<T>(option: &Option<Rc<T>>) -> Option<Rc<T>> {
     match option {

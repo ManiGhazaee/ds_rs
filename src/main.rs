@@ -1,15 +1,27 @@
-use std::{rc::Rc, time::Instant};
+use std::time::Instant;
 
 fn main() {
-    let string = String::from("value");
-    let rc1 = Rc::new(string);
     let inst = Instant::now();
-    let rc2 = Rc::clone(&rc1); 
-    dbg!(inst.elapsed().as_nanos());
-    let inst = Instant::now();
-    let rc3 = rc1.clone(); 
-    dbg!(inst.elapsed().as_nanos());
+    let mut l = ds_rs::linked_list::LinkedList::new();
+    for i in 0..10000 {
+        l.push_back(i);
+    }
 
-    dbg!(rc1 == rc2);
-    dbg!(rc1 == rc3);
+    // let mut _sum = 0;
+    // for i in l.iter() {
+    //     _sum += i;
+    // }
+    dbg!(inst.elapsed().as_micros());
+
+    let inst = Instant::now();
+    let mut l = std::collections::linked_list::LinkedList::new();
+    for i in 0..10000 {
+        l.push_back(i);
+    }
+
+    // let mut _sum = 0;
+    // for i in l.into_iter() {
+    //     _sum += i;
+    // }
+    dbg!(inst.elapsed().as_micros());
 }
