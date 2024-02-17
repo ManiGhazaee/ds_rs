@@ -114,10 +114,13 @@ impl<T: Clone> LinkedList<T> {
         let after = option_rc_clone(&before.borrow().next);
         let new_node = Rc::new(RefCell::new(Node {
             val,
-            next: after,
+            next: option_rc_clone(&after),
             prev: Some(Rc::clone(&before)),
         }));
-        before.borrow_mut().next = Some(new_node);
+        before.borrow_mut().next = Some(Rc::clone(&new_node));
+        if let Some(after) = after {
+            after.borrow_mut().prev = Some(new_node);
+        }
 
         self.size += 1;
     }
