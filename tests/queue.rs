@@ -1,4 +1,4 @@
-use ds_rs::Queue;
+use ds_rs::queue::Queue;
 
 #[test]
 fn queue_test() {
