@@ -144,7 +144,7 @@ fn test_linked_list_hard() {
     assert_eq!(l.front(), None);
     assert_eq!(l.back(), None);
     assert!(!l.contains("1"));
-    
+
     l.push_front("1");
 
     assert!(!l.is_empty());
@@ -268,7 +268,6 @@ fn test_linked_list_hard() {
     assert_eq!(l.get(8), None);
     assert_eq!(l.front(), Some("x"));
     assert_eq!(l.back(), Some("4"));
-    assert_eq!(l.back(), Some("4"));
 
     l.clear();
 
@@ -277,5 +276,20 @@ fn test_linked_list_hard() {
     assert_eq!(l.front(), None);
     assert_eq!(l.back(), None);
     assert!(!l.contains("1"));
-    
+
+    let mut l2 = LinkedList::new();
+    l2.push_back("1");
+    l2.push_back("2");
+    l.append(&mut l2);
+
+    assert_eq!(l2.len(), 0);
+    assert_eq!(l.len(), 2);
+    assert_eq!(l2.get(0), None);
+    assert_eq!(l2.get(1), None);
+    assert_eq!(l.get(0), Some("1"));
+    assert_eq!(l.get(1), Some("2"));
+    assert_eq!(l2.front(), None);
+    assert_eq!(l2.back(), None);
+    assert_eq!(l.front(), Some("1"));
+    assert_eq!(l.back(), Some("2"));
 }
