@@ -62,18 +62,30 @@ impl<T: Clone> LinkedList<T> {
     }
     pub fn pop_front(&mut self) {
         if !self.is_empty() {
+            if self.len() == 1 {
+                self.clear();
+                return;
+            }
             if let Some(front) = self.front.clone() {
                 self.front = front.borrow().next.clone();
-                self.front.clone().unwrap().borrow_mut().prev = None;
+                if let Some(front) = self.front.clone() {
+                    front.borrow_mut().prev = None;
+                }
                 self.size -= 1;
             }
         }
     }
     pub fn pop_back(&mut self) {
         if !self.is_empty() {
+            if self.len() == 1 {
+                self.clear();
+                return;
+            }
             if let Some(back) = self.back.clone() {
                 self.back = back.borrow().prev.clone();
-                self.back.clone().unwrap().borrow_mut().next = None;
+                if let Some(back) = self.back.clone() {
+                    back.borrow_mut().next = None;
+                }
                 self.size -= 1;
             }
         }
