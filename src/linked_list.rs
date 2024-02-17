@@ -31,7 +31,7 @@ impl<T: Clone> LinkedList<T> {
         let new_node = Rc::new(RefCell::new(Node {
             val,
             next: None,
-            prev: option_rc_clone(&self.back),
+            prev: self.clone_node(&self.back),
         }));
         if self.is_empty() {
             self.front = Some(Rc::clone(&new_node));
@@ -47,7 +47,7 @@ impl<T: Clone> LinkedList<T> {
     pub fn push_front(&mut self, val: T) {
         let new_node = Rc::new(RefCell::new(Node {
             val,
-            next: option_rc_clone(&self.front),
+            next: self.clone_node(&self.front),
             prev: None,
         }));
 
@@ -66,9 +66,9 @@ impl<T: Clone> LinkedList<T> {
                 self.clear();
                 return;
             }
-            if let Some(front) = option_rc_clone(&self.front) {
-                self.front = option_rc_clone(&front.borrow().next);
-                if let Some(front) = option_rc_clone(&self.front) {
+            if let Some(front) = self.clone_node(&self.front) {
+                self.front = self.clone_node(&front.borrow().next);
+                if let Some(front) = self.clone_node(&self.front) {
                     front.borrow_mut().prev = None;
                 }
                 self.size -= 1;
@@ -81,9 +81,9 @@ impl<T: Clone> LinkedList<T> {
                 self.clear();
                 return;
             }
-            if let Some(back) = option_rc_clone(&self.back) {
-                self.back = option_rc_clone(&back.borrow().prev);
-                if let Some(back) = option_rc_clone(&self.back) {
+            if let Some(back) = self.clone_node(&self.back) {
+                self.back = self.clone_node(&back.borrow().prev);
+                if let Some(back) = self.clone_node(&self.back) {
                     back.borrow_mut().next = None;
                 }
                 self.size -= 1;
@@ -111,10 +111,10 @@ impl<T: Clone> LinkedList<T> {
         }
 
         let before = self.get_rc(index - 1).unwrap();
-        let after = option_rc_clone(&before.borrow().next);
+        let after = self.clone_node(&before.borrow().next);
         let new_node = Rc::new(RefCell::new(Node {
             val,
-            next: option_rc_clone(&after),
+            next: self.clone_node(&after),
             prev: Some(Rc::clone(&before)),
         }));
         before.borrow_mut().next = Some(Rc::clone(&new_node));
@@ -137,11 +137,11 @@ impl<T: Clone> LinkedList<T> {
             return None;
         }
         let mut i = 0;
-        let mut temp = option_rc_clone(&self.front);
+        let mut temp = self.clone_node(&self.front);
         while i < index {
             if let Some(t) = temp {
                 let b = t.borrow();
-                temp = option_rc_clone(&b.next);
+                temp = self.clone_node(&b.next);
             }
             i += 1;
         }
@@ -164,22 +164,26 @@ impl<T: Clone> LinkedList<T> {
         }
     }
     pub fn append(&mut self, other: &mut LinkedList<T>) {
-        if let Some(other_front) = option_rc_clone(&other.front) {
-            other_front.borrow_mut().prev = option_rc_clone(&self.back);
+        if let Some(other_front) = self.clone_node(&other.front) {
+            other_front.borrow_mut().prev = self.clone_node(&self.back);
         } else {
             return;
         };
-        let other_front = option_rc_clone(&other.front);
-        if let Some(back) = option_rc_clone(&self.back) {
+        let other_front = self.clone_node(&other.front);
+        if let Some(back) = self.clone_node(&self.back) {
             back.borrow_mut().next = other_front;
         } else {
             self.front = other_front;
-            self.back = option_rc_clone(&other.back);
+            self.back = self.clone_node(&other.back);
         }
         self.size += other.size;
         other.size = 0;
         other.back = None;
         other.front = None;
+    }
+    #[inline]
+    fn clone_node(&self, node: &Option<Rc<RefCell<Node<T>>>>) -> Option<Rc<RefCell<Node<T>>>> {
+        option_rc_clone(node)
     }
 }
 

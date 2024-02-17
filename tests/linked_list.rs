@@ -293,3 +293,18 @@ fn test_linked_list_hard() {
     assert_eq!(l.front(), Some("1"));
     assert_eq!(l.back(), Some("2"));
 }
+
+#[test]
+fn test_iter() {
+    let mut list: LinkedList<u32> = LinkedList::new();
+
+    list.push_back(0);
+    list.push_back(1);
+    list.push_back(2);
+
+    let mut iter = list.iter();
+    assert_eq!(iter.next(), Some(0));
+    assert_eq!(iter.next(), Some(1));
+    assert_eq!(iter.next(), Some(2));
+    assert_eq!(iter.next(), None);
+}
