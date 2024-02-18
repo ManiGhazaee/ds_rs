@@ -1,5 +1,4 @@
 use std::fmt::Debug;
-use std::time::Instant;
 use std::{cell::RefCell, rc::Rc};
 
 pub struct Node<T> {
