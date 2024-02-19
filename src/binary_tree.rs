@@ -33,6 +33,7 @@ impl<T> BinaryTree<T> {
         self.vec.borrow_mut().pop();
         self.size.set(self.size.get() - 1);
     }
+    #[inline]
     pub fn root(&self) -> Node<T> {
         Node::new(&self.vec, &self.size, 0)
     }

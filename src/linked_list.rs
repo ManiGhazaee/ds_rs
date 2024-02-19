@@ -14,17 +14,20 @@ pub struct LinkedList<T> {
 }
 
 impl<T: Clone> LinkedList<T> {
-    pub fn new() -> Self {
+    #[inline]
+    pub const fn new() -> Self {
         LinkedList {
             front: None,
             back: None,
             size: 0,
         }
     }
-    pub fn is_empty(&self) -> bool {
+    #[inline]
+    pub const fn is_empty(&self) -> bool {
         self.size == 0
     }
-    pub fn len(&self) -> usize {
+    #[inline]
+    pub const fn len(&self) -> usize {
         self.size
     }
     pub fn push_back(&mut self, val: T) {
@@ -158,9 +161,11 @@ impl<T: Clone> LinkedList<T> {
         }
         temp
     }
+    #[inline]
     pub fn front(&self) -> Option<T> {
         self.node_val(&self.front)
     }
+    #[inline]
     pub fn back(&self) -> Option<T> {
         self.node_val(&self.back)
     }
