@@ -10,34 +10,35 @@ pub struct BinaryTree<T> {
 }
 
 impl<T> BinaryTree<T> {
+    #[inline]
     pub fn new() -> Self {
         Self {
             size: Rc::new(0.into()),
             vec: Rc::new(RefCell::new(vec![])),
         }
     }
+    #[inline]
     pub fn is_empty(&self) -> bool {
         self.size.get() == 0
     }
+    #[inline]
     pub fn len(&self) -> usize {
         self.size.get()
     }
     pub fn push(&mut self, val: T) {
         self.vec.borrow_mut().push(Rc::new(val));
-        let prev = self.size.get();
-        self.size.set(prev + 1);
+        self.size.set(self.size.get() + 1);
     }
     pub fn pop(&mut self) {
         self.vec.borrow_mut().pop();
-        let prev = self.size.get();
-        self.size.set(prev - 1);
+        self.size.set(self.size.get() - 1);
     }
-    pub fn root_node(&self) -> Node<T> {
-        Node {
-            vec: Rc::clone(&self.vec),
-            size: Rc::clone(&self.size),
-            index: 0,
-        }
+    pub fn root(&self) -> Node<T> {
+        Node::new(&self.vec, &self.size, 0)
+    }
+    pub fn clear(&mut self) {
+        self.vec.borrow_mut().clear();
+        self.size = Rc::new(0.into());
     }
 }
 
@@ -48,21 +49,28 @@ pub struct Node<T> {
 }
 
 impl<T> Node<T> {
-    pub fn left(&self) -> Node<T> {
-        let index = self.index * 2 + 1;
-        Node {
-            vec: Rc::clone(&self.vec),
-            size: Rc::clone(&self.size),
+    #[inline]
+    fn new(vec: &Rc<RefCell<Vec<Rc<T>>>>, size: &Rc<Cell<usize>>, index: usize) -> Self {
+        Self {
+            vec: Rc::clone(vec),
+            size: Rc::clone(size),
             index,
         }
     }
+    pub fn left(&self) -> Node<T> {
+        let index = self.index * 2 + 1;
+        Node::new(&self.vec, &self.size, index)
+    }
     pub fn right(&self) -> Node<T> {
         let index = self.index * 2 + 2;
-        Node {
-            vec: Rc::clone(&self.vec),
-            size: Rc::clone(&self.size),
-            index,
+        Node::new(&self.vec, &self.size, index)
+    }
+    pub fn parent(&self) -> Node<T> {
+        if self.is_root() {
+            panic!("Node is root");
         }
+        let index = (self.index - 1) / 2;
+        Node::new(&self.vec, &self.size, index)
     }
     pub fn val(&self) -> Option<Rc<T>> {
         match self.vec.borrow().get(self.index) {
@@ -77,9 +85,14 @@ impl<T> Node<T> {
         let x = x.get_mut(self.index).unwrap();
         *x = Rc::new(new_val);
     }
+    #[inline]
+    pub const fn is_root(&self) -> bool {
+        self.index == 0
+    }
 }
 
 impl<T: Clone> Node<T> {
+    #[inline]
     pub fn val_clone(&self) -> Option<T> {
         match self.val() {
             Some(i) => Some(i.as_ref().clone()),
@@ -97,11 +110,7 @@ impl<T: Default> Node<T> {
             self.vec.borrow_mut().resize(index + 1, Default::default());
         };
         self.size.set(self.size.get() + 1);
-        let mut ret = Node {
-            vec: Rc::clone(&self.vec),
-            size: Rc::clone(&self.size),
-            index,
-        };
+        let mut ret = Node::new(&self.vec, &self.size, index);
         ret.change(val);
         ret
     }
@@ -113,11 +122,7 @@ impl<T: Default> Node<T> {
             self.vec.borrow_mut().resize(index + 1, Default::default());
         };
         self.size.set(self.size.get() + 1);
-        let mut ret = Node {
-            vec: Rc::clone(&self.vec),
-            size: Rc::clone(&self.size),
-            index,
-        };
+        let mut ret = Node::new(&self.vec, &self.size, index);
         ret.change(val);
         ret
     }

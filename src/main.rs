@@ -82,7 +82,7 @@ fn main() {
     b.push('1');
     assert_eq!(b.len(), 1);
 
-    let mut r = b.root_node();
+    let mut r = b.root();
 
     assert_eq!(r.left().val(), None);
     assert_eq!(r.right().val(), None);

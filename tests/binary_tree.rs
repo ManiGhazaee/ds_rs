@@ -8,7 +8,7 @@ fn test_basic() {
     b.push('1');
     assert_eq!(b.len(), 1);
 
-    let mut r = b.root_node();
+    let mut r = b.root();
 
     assert_eq!(r.left().val(), None);
     assert_eq!(r.right().val(), None);
@@ -61,4 +61,66 @@ fn test_basic() {
 
     assert_eq!(right_right, Some('8'));
     assert_eq!(b.len(), 5);
+
+    assert_eq!(r.right().parent().val(), r.val());
+    assert_eq!(r.left().parent().val(), r.val());
+    assert_eq!(r.left().left().parent().val(), r.left().val());
+    assert_eq!(r.right().left().parent().val(), r.right().val());
+}
+
+#[test]
+#[should_panic]
+fn test_parent_panic_empty() {
+    let b: BinaryTree<isize> = BinaryTree::new();
+    b.root().parent();
+}
+
+#[test]
+#[should_panic]
+fn test_parent_panic() {
+    let mut b: BinaryTree<isize> = BinaryTree::new();
+    b.push(2);
+    b.root().parent();
+}
+
+#[test]
+fn test_clear() {
+    let mut b: BinaryTree<isize> = BinaryTree::new();
+    b.push(1);
+    b.push(2);
+    b.push(3);
+    b.push(4);
+    b.push(5);
+    b.push(6);
+    b.push(7);
+
+    let x = b.root().left().left().val_clone();
+    let y = b.root().left().left().val();
+
+    assert!(!b.is_empty());
+    b.clear();
+    assert!(b.is_empty());
+    assert_eq!(x, Some(4));
+    assert_eq!(y.unwrap().as_ref(), &4);
+    assert_eq!(b.root().val(), None);
+}
+
+#[test]
+fn test_is_root() {
+    let mut b: BinaryTree<isize> = BinaryTree::new();
+    b.push(1);
+    b.push(2);
+    b.push(3);
+    b.push(4);
+    b.push(5);
+    b.push(6);
+    b.push(7);
+
+    let x = b.root();
+    let y = b.root().left();
+    let z = b.root().right().right();
+
+    assert!(x.is_root());
+    assert!(!y.is_root());
+    assert!(!z.is_root());
 }
