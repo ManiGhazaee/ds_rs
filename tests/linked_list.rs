@@ -377,3 +377,50 @@ fn test_remove() {
     assert_eq!(l.front(), Some(2));
     assert_eq!(l.back(), Some(7));
 }
+
+#[test]
+fn test_change() {
+    let mut l = LinkedList::new(); 
+
+    l.push_back(1);
+    l.push_back(2);
+    l.push_back(3);
+    l.push_back(4);
+
+    l.change(0, 4);
+    l.change(1, 3);
+    l.change(2, 2);
+    l.change(3, 1);
+
+    assert_eq!(l.get(0), Some(4));
+    assert_eq!(l.get(1), Some(3));
+    assert_eq!(l.get(2), Some(2));
+    assert_eq!(l.get(3), Some(1));
+    assert_eq!(l.front(), Some(4));
+    assert_eq!(l.back(), Some(1));
+    assert_eq!(l.len(), 4);
+}
+
+#[test]
+#[should_panic]
+fn test_remove_panic() {
+    let mut l = LinkedList::new();
+    l.push_back(1);
+    l.remove(1);
+}
+
+#[test]
+#[should_panic]
+fn test_insert_panic() {
+    let mut l = LinkedList::new();
+    l.push_back(1);
+    l.insert(2, 0);
+}
+
+#[test]
+#[should_panic]
+fn test_change_panic() {
+    let mut l = LinkedList::new();
+    l.push_back(1);
+    l.change(2, 0);
+}

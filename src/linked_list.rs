@@ -107,8 +107,8 @@ impl<T: Clone> LinkedList<T> {
                 break;
             }
         }
-        self.back = None; // Set back pointer to None
-        self.size = 0; // Reset size
+        self.back = None;
+        self.size = 0;
     }
     /// # Panics
     /// if `index > len`
@@ -206,6 +206,15 @@ impl<T: Clone> LinkedList<T> {
         self.size -= 1;
         self.node_val(&current)
     }
+    /// # Panics
+    /// if `index >= len`
+    pub fn change(&mut self, index: usize, new_val: T) {
+        if index >= self.size {
+            panic!("index > len");
+        }
+        let node = self.get_rc(index).unwrap();
+        node.borrow_mut().val = new_val;
+    }
     #[inline]
     fn clone_node(&self, node: &Option<Rc<RefCell<Node<T>>>>) -> Option<Rc<RefCell<Node<T>>>> {
         option_rc_clone(node)
@@ -236,11 +245,11 @@ impl<T: PartialEq> LinkedList<T> {
 impl<T: Debug + Clone> Debug for LinkedList<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut idx = 0;
-        let mut temp = self.front.clone();
+        let mut temp = self.clone_node(&self.front);
         while let Some(n) = temp {
             let b = n.borrow();
-            temp = b.next.clone();
-            let val = b.val.clone();
+            temp = self.clone_node(&b.next);
+            let val = &b.val;
             let w = writeln!(f, "{}: {:?}", idx, val);
             if let Err(e) = w {
                 return Err(e);
@@ -278,8 +287,9 @@ impl<T: Clone> Iterator for Iter<T> {
 
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(current) = option_rc_clone(&self.current) {
-            let ret = Some(current.borrow().val.clone());
-            self.current = option_rc_clone(&current.borrow().next);
+            let b = current.borrow();
+            let ret = Some(b.val.clone());
+            self.current = option_rc_clone(&b.next);
             ret
         } else {
             None

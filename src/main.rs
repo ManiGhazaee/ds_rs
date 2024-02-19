@@ -49,6 +49,19 @@ fn main() {
         },
     );
 
+    let mut iter1 = l1.iter();
+    let mut iter2 = l2.iter();
+    perf.test(
+        "iter",
+        900,
+        || {
+            iter1.next();
+        },
+        || {
+            iter2.next();
+        },
+    );
+
     perf.test(
         "clear",
         1,
