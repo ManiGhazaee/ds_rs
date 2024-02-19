@@ -2,6 +2,7 @@ use std::time::Instant;
 
 pub mod linked_list;
 pub mod queue;
+pub mod binary_tree;
 
 pub enum DurationType {
     Nano,
