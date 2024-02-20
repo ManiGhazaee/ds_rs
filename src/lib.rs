@@ -1,8 +1,8 @@
 use std::time::Instant;
 
+pub mod binary_tree;
 pub mod linked_list;
 pub mod queue;
-pub mod binary_tree;
 
 pub enum DurationType {
     Nano,
@@ -41,13 +41,8 @@ impl<'a> PerfRelative<'a> {
     pub fn new(f1_name: &'a str, f2_name: &'a str) -> Self {
         PerfRelative { f1_name, f2_name }
     }
-    pub fn test<F1, F2>(
-        &self,
-        name: &str,
-        iterations: usize,
-        mut f1: F1,
-        mut f2: F2,
-    ) where
+    pub fn test<F1, F2>(&self, name: &str, iterations: usize, mut f1: F1, mut f2: F2)
+    where
         F1: FnMut(),
         F2: FnMut(),
     {
@@ -87,4 +82,23 @@ impl<'a> PerfRelative<'a> {
             println!("    {} {:.2}x faster than {}", name2, speed_ratio, name1);
         }
     }
+}
+
+pub fn is_heap<T: PartialOrd>(vec: &[binary_tree::Node<T>]) -> bool {
+    for i in (0..vec.len()).rev() {
+        let parent = if !vec[i].is_root() {
+            vec[i].parent()
+        } else {
+            continue;
+        };
+        let vals = if let (Some(val), Some(pval)) = (vec[i].val(), parent.val()) {
+            (val, pval)
+        } else {
+            continue;
+        };
+        if *vals.0 < *vals.1 {
+            return false;
+        }
+    }
+    true
 }

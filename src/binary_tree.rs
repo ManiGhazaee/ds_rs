@@ -1,12 +1,13 @@
 use std::{
     cell::{Cell, RefCell},
+    cmp::Ordering,
     rc::Rc,
 };
 
 #[derive(Debug)]
 pub struct BinaryTree<T> {
     size: Rc<Cell<usize>>,
-    vec: Rc<RefCell<Vec<Rc<T>>>>,
+    vec: Rc<RefCell<Vec<Option<Rc<T>>>>>,
 }
 
 impl<T> BinaryTree<T> {
@@ -26,7 +27,7 @@ impl<T> BinaryTree<T> {
         self.size.get()
     }
     pub fn push(&mut self, val: T) {
-        self.vec.borrow_mut().push(Rc::new(val));
+        self.vec.borrow_mut().push(Some(Rc::new(val)));
         self.size.set(self.size.get() + 1);
     }
     pub fn pop(&mut self) {
@@ -41,17 +42,85 @@ impl<T> BinaryTree<T> {
         self.vec.borrow_mut().clear();
         self.size = Rc::new(0.into());
     }
+    pub fn into_node_vec(&self) -> Vec<Node<T>> {
+        let len = self.vec.borrow().len();
+        let mut res = Vec::with_capacity(len);
+        for (idx, _) in self.vec.borrow().iter().enumerate() {
+            let node = Node::new(&self.vec, &self.size, idx);
+            res.push(node);
+        }
+        res
+    }
+}
+
+impl<T: PartialOrd> BinaryTree<T> {
+    pub fn heapify(&mut self) {
+        self.heapify_by(|a, b| b.partial_cmp(a).unwrap());
+    }
+    pub fn heapify_by<F>(&mut self, compare: F)
+    where
+        F: Fn(&T, &T) -> Ordering,
+    {
+        if self.size.get() <= 1 {
+            return;
+        }
+        let len = self.vec.borrow().len();
+        for i in (0..len).rev() {
+            self._heapify_by(&compare, i);
+        }
+    }
+    fn _heapify_by<F>(&mut self, compare: &F, root: usize)
+    where
+        F: Fn(&T, &T) -> Ordering,
+    {
+        let root = Node::new(&self.vec, &self.size, root);
+        let mut largest = root.clone();
+        let left = largest.left();
+        let right = largest.right();
+        if let Some(_left) = left.val() {
+            if let Ordering::Greater = compare(&_left, &largest.val().unwrap()) {
+                largest = left;
+            }
+        }
+        if let Some(_right) = right.val() {
+            if let Ordering::Greater = compare(&_right, &largest.val().unwrap()) {
+                largest = right;
+            }
+        }
+        if largest != root {
+            self.vec.borrow_mut().swap(largest.index, root.index);
+            self._heapify_by(compare, largest.index);
+        }
+    }
 }
 
 pub struct Node<T> {
-    vec: Rc<RefCell<Vec<Rc<T>>>>,
+    vec: Rc<RefCell<Vec<Option<Rc<T>>>>>,
     size: Rc<Cell<usize>>,
     index: usize,
 }
 
+impl<T> PartialEq for Node<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.vec.as_ptr() == other.vec.as_ptr()
+            && self.size == other.size
+            && self.index == other.index
+    }
+}
+
+impl<T> Clone for Node<T> {
+    fn clone(&self) -> Self {
+        Self {
+            vec: Rc::clone(&self.vec),
+            size: Rc::clone(&self.size),
+            index: self.index.clone(),
+        }
+    }
+}
+
 impl<T> Node<T> {
     #[inline]
-    fn new(vec: &Rc<RefCell<Vec<Rc<T>>>>, size: &Rc<Cell<usize>>, index: usize) -> Self {
+    fn new(vec: &Rc<RefCell<Vec<Option<Rc<T>>>>>, size: &Rc<Cell<usize>>, index: usize) -> Self {
         Self {
             vec: Rc::clone(vec),
             size: Rc::clone(size),
@@ -74,17 +143,19 @@ impl<T> Node<T> {
         Node::new(&self.vec, &self.size, index)
     }
     pub fn val(&self) -> Option<Rc<T>> {
-        match self.vec.borrow().get(self.index) {
-            Some(i) => Some(Rc::clone(&i)),
-            None => None,
+        if let Some(i) = self.vec.borrow().get(self.index) {
+            if let Some(i) = i {
+                return Some(Rc::clone(&i));
+            }
         }
+        None
     }
     /// # Panics
     /// if `self.val()` is `None`
     pub fn change(&mut self, new_val: T) {
         let mut x = self.vec.borrow_mut();
         let x = x.get_mut(self.index).unwrap();
-        *x = Rc::new(new_val);
+        *x = Some(Rc::new(new_val));
     }
     #[inline]
     pub const fn is_root(&self) -> bool {
@@ -110,8 +181,10 @@ impl<T: Default> Node<T> {
         if index >= self.vec.borrow().len() {
             self.vec.borrow_mut().resize(index + 1, Default::default());
         };
-        self.size.set(self.size.get() + 1);
         let mut ret = Node::new(&self.vec, &self.size, index);
+        if let None = ret.val() {
+            self.size.set(self.size.get() + 1);
+        }
         ret.change(val);
         ret
     }
@@ -122,8 +195,10 @@ impl<T: Default> Node<T> {
         if index >= self.vec.borrow().len() {
             self.vec.borrow_mut().resize(index + 1, Default::default());
         };
-        self.size.set(self.size.get() + 1);
         let mut ret = Node::new(&self.vec, &self.size, index);
+        if let None = ret.val() {
+            self.size.set(self.size.get() + 1);
+        }
         ret.change(val);
         ret
     }

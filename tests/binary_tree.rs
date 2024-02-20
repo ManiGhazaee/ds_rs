@@ -1,4 +1,6 @@
-use ds_rs::binary_tree::BinaryTree;
+use std::collections::BinaryHeap;
+
+use ds_rs::{binary_tree::BinaryTree, is_heap};
 
 #[test]
 fn test_basic() {
@@ -123,4 +125,47 @@ fn test_is_root() {
     assert!(x.is_root());
     assert!(!y.is_root());
     assert!(!z.is_root());
+}
+
+#[test]
+fn test_set() {
+    let mut b: BinaryTree<isize> = BinaryTree::new();
+    b.push(1);
+    b.push(2);
+    b.push(3);
+    b.push(4);
+    b.push(5);
+    b.push(6);
+    b.push(7);
+
+    assert_eq!(b.len(), 7);
+
+    let x = b.root();
+    let y = b.root().set_left(b.root().left().val_clone().unwrap() * 2);
+    let z = b.root().set_right(b.root().right().val_clone().unwrap() * 3);
+
+    assert_eq!(b.len(), 7);
+    assert_eq!(x.val_clone(), Some(1));
+    assert_eq!(y.val_clone(), Some(4));
+    assert_eq!(z.val_clone(), Some(9));
+    assert_eq!(x.left().val_clone(), Some(4));
+    assert_eq!(x.right().val_clone(), Some(9));
+}
+
+#[test]
+fn test_heapify() {
+    let mut b = BinaryTree::new();
+    b.push(9);
+    b.push(8);
+    b.push(7);
+    b.push(6);
+    b.push(4);
+    b.push(3);
+    b.push(2);
+
+    assert!(!is_heap(&b.into_node_vec()[..]));
+
+    b.heapify();
+
+    assert!(is_heap(&b.into_node_vec()[..]));
 }
