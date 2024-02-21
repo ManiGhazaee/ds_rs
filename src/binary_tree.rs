@@ -54,8 +54,11 @@ impl<T> BinaryTree<T> {
 }
 
 impl<T: PartialOrd> BinaryTree<T> {
-    pub fn heapify(&mut self) {
+    pub fn heapify_min(&mut self) {
         self.heapify_by(|a, b| b.partial_cmp(a).unwrap());
+    }
+    pub fn heapify_max(&mut self) {
+        self.heapify_by(|a, b| a.partial_cmp(b).unwrap());
     }
     pub fn heapify_by<F>(&mut self, compare: F)
     where

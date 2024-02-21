@@ -1,6 +1,4 @@
-use std::collections::BinaryHeap;
-
-use ds_rs::{binary_tree::BinaryTree, is_heap};
+use ds_rs::{binary_tree::BinaryTree, is_heap_by, is_max_heap, is_min_heap};
 
 #[test]
 fn test_basic() {
@@ -142,7 +140,9 @@ fn test_set() {
 
     let x = b.root();
     let y = b.root().set_left(b.root().left().val_clone().unwrap() * 2);
-    let z = b.root().set_right(b.root().right().val_clone().unwrap() * 3);
+    let z = b
+        .root()
+        .set_right(b.root().right().val_clone().unwrap() * 3);
 
     assert_eq!(b.len(), 7);
     assert_eq!(x.val_clone(), Some(1));
@@ -163,9 +163,27 @@ fn test_heapify() {
     b.push(3);
     b.push(2);
 
-    assert!(!is_heap(&b.into_node_vec()[..]));
+    assert!(!is_min_heap(&b.into_node_vec()));
 
-    b.heapify();
+    b.heapify_min();
 
-    assert!(is_heap(&b.into_node_vec()[..]));
+    assert!(is_min_heap(&b.into_node_vec()));
+    assert!(!is_max_heap(&b.into_node_vec()));
+
+    b.clear();
+
+    b.push(1);
+    b.push(2);
+    b.push(5);
+    b.push(2);
+    b.push(5);
+    b.push(9);
+    b.push(7);
+
+    assert!(!is_max_heap(&b.into_node_vec()));
+
+    b.heapify_max();
+
+    assert!(is_max_heap(&b.into_node_vec()));
+    assert!(!is_min_heap(&b.into_node_vec()));
 }

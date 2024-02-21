@@ -1,4 +1,4 @@
-use std::time::Instant;
+use std::{cmp::Ordering, time::Instant};
 
 pub mod binary_tree;
 pub mod linked_list;
@@ -84,7 +84,10 @@ impl<'a> PerfRelative<'a> {
     }
 }
 
-pub fn is_heap<T: PartialOrd>(vec: &[binary_tree::Node<T>]) -> bool {
+pub fn is_heap_by<T, F>(vec: &[binary_tree::Node<T>], compare: &F) -> bool
+where
+    F: Fn(&T, &T) -> Ordering,
+{
     for i in (0..vec.len()).rev() {
         let parent = if !vec[i].is_root() {
             vec[i].parent()
@@ -96,9 +99,17 @@ pub fn is_heap<T: PartialOrd>(vec: &[binary_tree::Node<T>]) -> bool {
         } else {
             continue;
         };
-        if *vals.0 < *vals.1 {
+        if let Ordering::Less = compare(&*vals.0, &*vals.1) {
             return false;
         }
     }
     true
+}
+
+pub fn is_max_heap<T: PartialOrd>(vec: &Vec<binary_tree::Node<T>>) -> bool {
+    is_heap_by(&vec[..], &|a: &T, b: &T| b.partial_cmp(a).unwrap())
+}
+
+pub fn is_min_heap<T: PartialOrd>(vec: &Vec<binary_tree::Node<T>>) -> bool {
+    is_heap_by(&vec[..], &|a: &T, b: &T| a.partial_cmp(b).unwrap())
 }

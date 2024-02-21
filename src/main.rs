@@ -84,6 +84,6 @@ fn main() {
     b.push(4);
     b.push(3);
     b.push(2);
-    b.heapify();
+    b.heapify_min();
     dbg!(b);
 }
