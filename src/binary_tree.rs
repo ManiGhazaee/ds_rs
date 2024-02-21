@@ -19,12 +19,23 @@ impl<T> BinaryTree<T> {
         }
     }
     #[inline]
+    pub fn with_capacity(capacity: usize) -> Self {
+        Self {
+            size: Rc::new(0.into()),
+            vec: Rc::new(RefCell::new(Vec::with_capacity(capacity))),
+        }
+    }
+    #[inline]
     pub fn is_empty(&self) -> bool {
         self.size.get() == 0
     }
     #[inline]
     pub fn len(&self) -> usize {
         self.size.get()
+    }
+    #[inline]
+    pub fn capacity(&self) -> usize {
+        self.vec.borrow().capacity()
     }
     pub fn push(&mut self, val: T) {
         self.vec.borrow_mut().push(Some(Rc::new(val)));
@@ -38,25 +49,38 @@ impl<T> BinaryTree<T> {
     pub fn root(&self) -> Node<T> {
         Node::new(&self.vec, &self.size, 0)
     }
+    pub fn set_root(&self, val: T) -> Node<T> {
+        if self.is_empty() {
+            self.vec.borrow_mut().push(Some(Rc::new(val)));
+        } else {
+            self.vec.borrow_mut()[0] = Some(Rc::new(val));
+        }
+        self.root()
+    }
     pub fn clear(&mut self) {
         self.vec.borrow_mut().clear();
         self.size = Rc::new(0.into());
     }
-    pub fn into_node_vec(&self) -> Vec<Node<T>> {
+    pub fn as_vec(&self) -> Vec<Node<T>> {
         let len = self.vec.borrow().len();
         let mut res = Vec::with_capacity(len);
-        for (idx, _) in self.vec.borrow().iter().enumerate() {
+        for idx in 0..self.vec.borrow().len() {
             let node = Node::new(&self.vec, &self.size, idx);
             res.push(node);
         }
         res
     }
+    pub fn as_vec_raw(&self) -> Vec<Option<Rc<T>>> {
+        self.vec.borrow().clone()
+    }
 }
 
 impl<T: PartialOrd> BinaryTree<T> {
+    #[inline]
     pub fn heapify_min(&mut self) {
         self.heapify_by(|a, b| b.partial_cmp(a).unwrap());
     }
+    #[inline]
     pub fn heapify_max(&mut self) {
         self.heapify_by(|a, b| a.partial_cmp(b).unwrap());
     }

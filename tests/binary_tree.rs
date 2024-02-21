@@ -163,14 +163,14 @@ fn test_heapify() {
     b.push(3);
     b.push(2);
 
-    assert!(!is_min_heap(&b.into_node_vec()));
+    assert!(!is_min_heap(&b.as_vec()));
     assert!(!b.is_min_heap());
 
     b.heapify_min();
 
-    assert!(is_min_heap(&b.into_node_vec()));
+    assert!(is_min_heap(&b.as_vec()));
     assert!(b.is_min_heap());
-    assert!(!is_max_heap(&b.into_node_vec()));
+    assert!(!is_max_heap(&b.as_vec()));
 
     b.clear();
 
@@ -182,12 +182,38 @@ fn test_heapify() {
     b.push(9);
     b.push(7);
 
-    assert!(!is_max_heap(&b.into_node_vec()));
+    assert!(!is_max_heap(&b.as_vec()));
     assert!(!b.is_max_heap());
 
     b.heapify_max();
 
-    assert!(is_max_heap(&b.into_node_vec()));
+    assert!(is_max_heap(&b.as_vec()));
     assert!(b.is_max_heap());
-    assert!(!is_min_heap(&b.into_node_vec()));
+    assert!(!is_min_heap(&b.as_vec()));
+}
+
+#[test]
+fn test_as_vec() {
+    let b = BinaryTree::new();
+
+    b.set_root(0).set_left(1).set_right(2);
+    b.root().set_right(3).set_right(4);
+    // [0, 1, 3, None, 2, None, 4]
+
+    let vec = b.as_vec();
+
+    assert_eq!(vec[0].val_clone(), Some(0));
+    assert_eq!(vec[1].val_clone(), Some(1));
+    assert_eq!(vec[2].val_clone(), Some(3));
+    assert_eq!(vec[3].val_clone(), None);
+    assert_eq!(vec[4].val_clone(), Some(2));
+    assert_eq!(vec[5].val_clone(), None);
+    assert_eq!(vec[6].val_clone(), Some(4));
+}
+
+#[test]
+fn test_capacity() {
+    let b = BinaryTree::with_capacity(100);
+    b.set_root(0);
+    assert!(b.capacity() >= 100);
 }
