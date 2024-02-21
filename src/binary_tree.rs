@@ -95,6 +95,40 @@ impl<T: PartialOrd> BinaryTree<T> {
             self._heapify_by(compare, largest.index);
         }
     }
+    pub fn is_heap_by<F>(&self, compare: F) -> bool
+    where
+        F: Fn(&T, &T) -> Ordering,
+    {
+        let len = self.vec.borrow().len();
+        if len <= 1 {
+            return true;
+        }
+        let mut i = len - 1;
+        loop {
+            if i == 0 {
+                break;
+            };
+            let parent = &self.vec.borrow()[(i - 1) / 2];
+            let current = &self.vec.borrow()[i];
+            if let (Some(c), Some(p)) = (current, parent) {
+                if let Ordering::Less = compare(&*c, &*p) {
+                    return false;
+                }
+            } else {
+                continue;
+            }
+            i -= 1;
+        }
+        true
+    }
+    #[inline]
+    pub fn is_max_heap(&self) -> bool {
+        self.is_heap_by(|a, b| b.partial_cmp(a).unwrap())
+    }
+    #[inline]
+    pub fn is_min_heap(&self) -> bool {
+        self.is_heap_by(|a, b| a.partial_cmp(b).unwrap())
+    }
 }
 
 pub struct Node<T> {
@@ -170,7 +204,7 @@ impl<T: Clone> Node<T> {
     #[inline]
     pub fn val_clone(&self) -> Option<T> {
         match self.val() {
-            Some(i) => Some(i.as_ref().clone()),
+            Some(i) => Some((*i).clone()),
             None => None,
         }
     }

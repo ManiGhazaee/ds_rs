@@ -84,7 +84,7 @@ impl<'a> PerfRelative<'a> {
     }
 }
 
-pub fn is_heap_by<T, F>(vec: &[binary_tree::Node<T>], compare: &F) -> bool
+pub fn is_heap_by<T, F>(vec: &[binary_tree::Node<T>], compare: F) -> bool
 where
     F: Fn(&T, &T) -> Ordering,
 {
@@ -107,9 +107,9 @@ where
 }
 
 pub fn is_max_heap<T: PartialOrd>(vec: &Vec<binary_tree::Node<T>>) -> bool {
-    is_heap_by(&vec[..], &|a: &T, b: &T| b.partial_cmp(a).unwrap())
+    is_heap_by(&vec[..], |a, b| b.partial_cmp(a).unwrap())
 }
 
 pub fn is_min_heap<T: PartialOrd>(vec: &Vec<binary_tree::Node<T>>) -> bool {
-    is_heap_by(&vec[..], &|a: &T, b: &T| a.partial_cmp(b).unwrap())
+    is_heap_by(&vec[..], |a, b| a.partial_cmp(b).unwrap())
 }

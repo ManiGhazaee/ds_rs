@@ -1,4 +1,4 @@
-use ds_rs::{binary_tree::BinaryTree, is_heap_by, is_max_heap, is_min_heap};
+use ds_rs::{binary_tree::BinaryTree, is_max_heap, is_min_heap};
 
 #[test]
 fn test_basic() {
@@ -164,10 +164,12 @@ fn test_heapify() {
     b.push(2);
 
     assert!(!is_min_heap(&b.into_node_vec()));
+    assert!(!b.is_min_heap());
 
     b.heapify_min();
 
     assert!(is_min_heap(&b.into_node_vec()));
+    assert!(b.is_min_heap());
     assert!(!is_max_heap(&b.into_node_vec()));
 
     b.clear();
@@ -181,9 +183,11 @@ fn test_heapify() {
     b.push(7);
 
     assert!(!is_max_heap(&b.into_node_vec()));
+    assert!(!b.is_max_heap());
 
     b.heapify_max();
 
     assert!(is_max_heap(&b.into_node_vec()));
+    assert!(b.is_max_heap());
     assert!(!is_min_heap(&b.into_node_vec()));
 }
