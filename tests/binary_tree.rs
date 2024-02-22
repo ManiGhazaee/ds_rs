@@ -1,4 +1,4 @@
-use ds_rs::{binary_tree::{BinaryTree, Node}, is_max_heap, is_min_heap};
+use ds_rs::{binary_tree::BinaryTree, is_max_heap, is_min_heap};
 
 #[test]
 fn test_basic() {
@@ -234,3 +234,32 @@ fn test_empty() {
     assert_eq!(b.root().val(), None);
     assert_eq!(b.root().val_clone(), None);
 }
+
+#[test]
+fn test_sorted() {
+    let mut b = BinaryTree::new();
+
+    b.push(9);
+    b.push(7);
+    b.push(8);
+    b.push(3);
+    b.push(1);
+    b.push(5);
+    b.push(6);
+    b.push(4);
+    b.push(2);
+
+    let vec = b.into_vec_sorted();
+
+    assert_eq!(vec, vec![1, 2, 3, 4, 5, 6, 7, 8, 9])
+}
+
+#[test]
+fn test_sorted_empty() {
+    let b: BinaryTree<i32> = BinaryTree::new();
+
+    let vec = b.into_vec_sorted();
+
+    assert_eq!(vec, vec![])
+}
+

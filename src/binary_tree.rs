@@ -46,7 +46,7 @@ impl<T> BinaryTree<T> {
         let s = self.size.get();
         if s != 0 {
             self.size.set(s - 1);
-        } 
+        }
     }
     #[inline]
     pub fn root(&self) -> Node<T> {
@@ -96,10 +96,10 @@ impl<T: PartialOrd> BinaryTree<T> {
         }
         let len = self.vec.borrow().len();
         for i in (0..len).rev() {
-            self._heapify_by(&compare, i);
+            self._heapify_by(&compare, i, len);
         }
     }
-    fn _heapify_by<F>(&mut self, compare: &F, root: usize)
+    fn _heapify_by<F>(&mut self, compare: &F, root: usize, len: usize)
     where
         F: Fn(&T, &T) -> Ordering,
     {
@@ -107,19 +107,23 @@ impl<T: PartialOrd> BinaryTree<T> {
         let mut largest = root.clone();
         let left = largest.left();
         let right = largest.right();
-        if let Some(_left) = left.val() {
-            if let Ordering::Greater = compare(&_left, &largest.val().unwrap()) {
-                largest = left;
+        if left.index < len {
+            if let Some(_left) = left.val() {
+                if let Ordering::Greater = compare(&_left, &largest.val().unwrap()) {
+                    largest = left;
+                }
             }
         }
-        if let Some(_right) = right.val() {
-            if let Ordering::Greater = compare(&_right, &largest.val().unwrap()) {
-                largest = right;
+        if right.index < len {
+            if let Some(_right) = right.val() {
+                if let Ordering::Greater = compare(&_right, &largest.val().unwrap()) {
+                    largest = right;
+                }
             }
         }
         if largest != root {
             self.vec.borrow_mut().swap(largest.index, root.index);
-            self._heapify_by(compare, largest.index);
+            self._heapify_by(compare, largest.index, len);
         }
     }
     pub fn is_heap_by<F>(&self, compare: F) -> bool
@@ -155,6 +159,36 @@ impl<T: PartialOrd> BinaryTree<T> {
     #[inline]
     pub fn is_min_heap(&self) -> bool {
         self.is_heap_by(|a, b| a.partial_cmp(b).unwrap())
+    }
+}
+
+impl<T: Clone + PartialOrd> BinaryTree<T> {
+    pub fn into_vec_sorted_by<F>(mut self, compare: F) -> Vec<T>
+    where
+        F: Fn(&T, &T) -> Ordering,
+    {
+        let len = self.vec.borrow().len();
+        if len <= 1 {
+            return self
+                .as_vec()
+                .into_iter()
+                .filter_map(|i| i.val_clone())
+                .collect();
+        }
+        self.heapify_by(&compare);
+
+        for i in (1..len).rev() {
+            self.vec.borrow_mut().swap(i, 0);
+            self._heapify_by(&compare, 0, i);
+        }
+
+        self.as_vec()
+            .into_iter()
+            .filter_map(|i| i.val_clone())
+            .collect()
+    }
+    pub fn into_vec_sorted(self) -> Vec<T> {
+        self.into_vec_sorted_by(|a, b| a.partial_cmp(b).unwrap())
     }
 }
 
