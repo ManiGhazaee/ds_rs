@@ -1,6 +1,7 @@
 use std::{
     cell::{Cell, RefCell},
     cmp::Ordering,
+    ops::Deref,
     rc::Rc,
 };
 
@@ -94,9 +95,22 @@ impl<T: PartialOrd> BinaryTree<T> {
         if self.size.get() <= 1 {
             return;
         }
+        self.filter_none(); 
         let len = self.vec.borrow().len();
         for i in (0..len).rev() {
             self._heapify_by(&compare, i, len);
+        }
+    }
+    fn filter_none(&mut self) {
+        let mut len = self.vec.borrow().len();
+        let mut i = 0;
+        while i < len {
+            if self.vec.borrow()[i].is_none() {
+                self.vec.borrow_mut().remove(i);
+                len -= 1;
+            } else {
+                i += 1;
+            }
         }
     }
     fn _heapify_by<F>(&mut self, compare: &F, root: usize, len: usize)
@@ -163,32 +177,49 @@ impl<T: PartialOrd> BinaryTree<T> {
 }
 
 impl<T: Clone + PartialOrd> BinaryTree<T> {
-    pub fn into_vec_sorted_by<F>(mut self, compare: F) -> Vec<T>
+    pub fn into_sorted_vec_by<F>(mut self, compare: F) -> Vec<T>
     where
         F: Fn(&T, &T) -> Ordering,
     {
         let len = self.vec.borrow().len();
         if len <= 1 {
             return self
-                .as_vec()
+                .vec
+                .take()
                 .into_iter()
-                .filter_map(|i| i.val_clone())
+                .filter_map(|i| {
+                    if let Some(i) = i {
+                        Some(i.deref().to_owned())
+                    } else {
+                        None
+                    }
+                })
                 .collect();
         }
+
         self.heapify_by(&compare);
+        let len = self.vec.borrow().len();
 
         for i in (1..len).rev() {
             self.vec.borrow_mut().swap(i, 0);
             self._heapify_by(&compare, 0, i);
         }
 
-        self.as_vec()
+        self.vec
+            .take()
             .into_iter()
-            .filter_map(|i| i.val_clone())
+            .filter_map(|i| {
+                if let Some(i) = i {
+                    Some(i.deref().to_owned())
+                } else {
+                    None
+                }
+            })
             .collect()
     }
-    pub fn into_vec_sorted(self) -> Vec<T> {
-        self.into_vec_sorted_by(|a, b| a.partial_cmp(b).unwrap())
+    #[inline]
+    pub fn into_sorted_vec(self) -> Vec<T> {
+        self.into_sorted_vec_by(|a, b| a.partial_cmp(b).unwrap())
     }
 }
 

@@ -249,16 +249,28 @@ fn test_sorted() {
     b.push(4);
     b.push(2);
 
-    let vec = b.into_vec_sorted();
+    let vec = b.into_sorted_vec();
 
-    assert_eq!(vec, vec![1, 2, 3, 4, 5, 6, 7, 8, 9])
+    assert_eq!(vec, vec![1, 2, 3, 4, 5, 6, 7, 8, 9]);
+
+    let b = BinaryTree::new();
+
+    b.set_root(0).set_left(1).set_right(2);
+    b.root().set_right(3).set_right(4);
+    // [0, 1, 3, None, 2, None, 4]
+
+    let vec = b.into_sorted_vec();
+
+    assert_eq!(vec, vec![0, 1, 2, 3, 4]);
+ 
+
 }
 
 #[test]
 fn test_sorted_empty() {
     let b: BinaryTree<i32> = BinaryTree::new();
 
-    let vec = b.into_vec_sorted();
+    let vec = b.into_sorted_vec();
 
     assert_eq!(vec, vec![])
 }

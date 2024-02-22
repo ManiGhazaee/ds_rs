@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use ds_rs::{binary_tree::BinaryTree, PerfRelative};
 
 #[allow(dead_code)]
@@ -76,14 +78,39 @@ fn perf_test() {
 }
 
 fn main() {
-    let mut b = BinaryTree::new();
+    let mut v = Vec::new();
+
+    v.push(9);
+    v.push(7);
+    v.push(8);
+    v.push(3);
+    v.push(1);
+    v.push(5);
+    v.push(6);
+    v.push(4);
+    v.push(2);
+
+   let mut b = BinaryTree::new();
+
     b.push(9);
-    b.push(8);
     b.push(7);
+    b.push(8);
+    b.push(3);
+    b.push(1);
+    b.push(5);
     b.push(6);
     b.push(4);
-    b.push(3);
     b.push(2);
-    b.heapify_min();
-    dbg!(b);
+
+    let inst = Instant::now();
+    let _ = b.into_sorted_vec();
+    let elpsd1 = inst.elapsed().as_micros();
+    let inst = Instant::now();
+    v.sort();
+    let elpsd2 = inst.elapsed().as_micros();
+
+    dbg!(elpsd1);
+    dbg!(elpsd2);
+
+
 }
