@@ -43,7 +43,10 @@ impl<T> BinaryTree<T> {
     }
     pub fn pop(&mut self) {
         self.vec.borrow_mut().pop();
-        self.size.set(self.size.get() - 1);
+        let s = self.size.get();
+        if s != 0 {
+            self.size.set(s - 1);
+        } 
     }
     #[inline]
     pub fn root(&self) -> Node<T> {

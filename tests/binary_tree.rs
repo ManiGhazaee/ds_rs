@@ -1,4 +1,4 @@
-use ds_rs::{binary_tree::BinaryTree, is_max_heap, is_min_heap};
+use ds_rs::{binary_tree::{BinaryTree, Node}, is_max_heap, is_min_heap};
 
 #[test]
 fn test_basic() {
@@ -216,4 +216,21 @@ fn test_capacity() {
     let b = BinaryTree::with_capacity(100);
     b.set_root(0);
     assert!(b.capacity() >= 100);
+}
+
+#[test]
+fn test_empty() {
+    let mut b: BinaryTree<i32> = BinaryTree::new();
+    assert!(b.as_vec().is_empty());
+    assert!(b.as_vec_raw().is_empty());
+    b.heapify_max();
+    b.heapify_min();
+    b.is_heap_by(|a, b| a.partial_cmp(b).unwrap());
+    assert!(b.is_empty());
+    assert!(b.is_max_heap());
+    assert!(b.is_min_heap());
+    assert_eq!(b.len(), 0);
+    b.pop();
+    assert_eq!(b.root().val(), None);
+    assert_eq!(b.root().val_clone(), None);
 }
