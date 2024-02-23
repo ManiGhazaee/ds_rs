@@ -12,6 +12,13 @@ pub struct BinaryTree<T> {
 }
 
 impl<T> BinaryTree<T> {
+    /// # Example
+    /// ```
+    /// use ds_rs::binary_tree::BinaryTree;
+    /// let b: BinaryTree<usize> = BinaryTree::new();
+    /// assert!(b.is_empty());
+    /// assert_eq!(b.len(), 0);
+    /// ```
     #[inline]
     pub fn new() -> Self {
         Self {
@@ -20,6 +27,14 @@ impl<T> BinaryTree<T> {
         }
     }
 
+    /// # Example
+    /// ```
+    /// use ds_rs::binary_tree::BinaryTree;
+    /// let b: BinaryTree<usize> = BinaryTree::with_capacity(100);
+    /// assert!(b.capacity() >= 100);
+    /// assert_eq!(b.len(), 0);
+    /// assert!(b.is_empty());
+    /// ```
     #[inline]
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
@@ -28,6 +43,14 @@ impl<T> BinaryTree<T> {
         }
     }
 
+    /// # Example
+    /// ```
+    /// use ds_rs::binary_tree::BinaryTree;
+    /// let b: BinaryTree<usize> = BinaryTree::new();
+    /// assert!(b.is_empty());
+    /// b.set_root(0);
+    /// assert!(!b.is_empty());
+    /// ```
     #[inline]
     pub fn is_empty(&self) -> bool {
         self.size.get() == 0
@@ -45,11 +68,21 @@ impl<T> BinaryTree<T> {
 
     pub fn push(&mut self, val: T) {
         self.vec.borrow_mut().push(Some(Rc::new(val)));
-        self.size.set(self.size.get() + 1);
+        self.size_inc();
     }
 
     pub fn pop(&mut self) {
         self.vec.borrow_mut().pop();
+        self.size_dec();
+    }
+
+    #[inline]
+    fn size_inc(&self) {
+        self.size.set(self.size.get() + 1);
+    }
+
+    #[inline]
+    fn size_dec(&self) {
         let s = self.size.get();
         if s != 0 {
             self.size.set(s - 1);
@@ -64,6 +97,7 @@ impl<T> BinaryTree<T> {
     pub fn set_root(&self, val: T) -> Node<T> {
         if self.is_empty() {
             self.vec.borrow_mut().push(Some(Rc::new(val)));
+            self.size_inc();
         } else {
             self.vec.borrow_mut()[0] = Some(Rc::new(val));
         }
@@ -85,6 +119,7 @@ impl<T> BinaryTree<T> {
         res
     }
 
+    #[inline]
     pub fn as_vec_raw(&self) -> Vec<Option<Rc<T>>> {
         self.vec.borrow().clone()
     }
@@ -130,7 +165,6 @@ impl<T: PartialOrd> BinaryTree<T> {
 }
 
 impl<T: Clone + PartialOrd> BinaryTree<T> {
-    #[inline]
     pub fn heapify_by<F>(&mut self, compare: F)
     where
         F: Fn(&T, &T) -> Ordering,
@@ -157,10 +191,12 @@ impl<T: Clone + PartialOrd> BinaryTree<T> {
         *self.vec.borrow_mut() = input.into_iter().map(|i| Some(Rc::new(i))).collect();
     }
 
+    #[inline]
     pub fn heapify_min(&mut self) {
         self.heapify_by(|a, b| b.partial_cmp(a).unwrap());
     }
 
+    #[inline]
     pub fn heapify_max(&mut self) {
         self.heapify_by(|a, b| a.partial_cmp(b).unwrap());
     }
@@ -190,6 +226,7 @@ impl<T: Clone + PartialOrd> BinaryTree<T> {
         input
     }
 
+    #[inline]
     fn heapsort_by<F>(input: &mut [T], compare: F)
     where
         F: Fn(&T, &T) -> Ordering,
@@ -239,9 +276,9 @@ impl<T: Clone + PartialOrd> BinaryTree<T> {
 }
 
 impl<T: Clone> BinaryTree<T> {
+    #[inline]
     pub fn into_vec(self) -> Vec<T> {
-        self
-            .vec
+        self.vec
             .take()
             .into_iter()
             .filter_map(|i| {
@@ -255,7 +292,37 @@ impl<T: Clone> BinaryTree<T> {
     }
 }
 
+impl<T: Clone, const N: usize> From<[T; N]> for BinaryTree<T> {
+    /// # Example
+    /// ```
+    /// use ds_rs::binary_tree::BinaryTree;
+    /// let b = BinaryTree::from([1, 2, 3]);
+    /// assert_eq!(b.root().val_clone(), Some(1));
+    /// assert_eq!(b.root().left().val_clone(), Some(2));
+    /// assert_eq!(b.root().right().val_clone(), Some(3));
+    /// ```
+    fn from(value: [T; N]) -> Self {
+        let v: Vec<Option<Rc<T>>> = value
+            .to_vec()
+            .into_iter()
+            .map(|i| Some(Rc::new(i)))
+            .collect();
+        let x = Rc::new(RefCell::new(v));
+        let len = Rc::new(Cell::new(x.borrow().len()));
+        BinaryTree { size: len, vec: x }
+    }
+}
+
 impl<T: Clone> From<&[T]> for BinaryTree<T> {
+    /// # Example
+    /// ```
+    /// use ds_rs::binary_tree::BinaryTree;
+    /// let v = Vec::from([1, 2, 3]);
+    /// let b = BinaryTree::from(&v[..]);
+    /// assert_eq!(b.root().val_clone(), Some(1));
+    /// assert_eq!(b.root().left().val_clone(), Some(2));
+    /// assert_eq!(b.root().right().val_clone(), Some(3));
+    /// ```
     fn from(value: &[T]) -> Self {
         let v: Vec<Option<Rc<T>>> = value
             .to_vec()
@@ -269,6 +336,14 @@ impl<T: Clone> From<&[T]> for BinaryTree<T> {
 }
 
 impl<T> From<Vec<T>> for BinaryTree<T> {
+    /// # Example
+    /// ```
+    /// use ds_rs::binary_tree::BinaryTree;
+    /// let b = BinaryTree::from(vec![1, 2, 3]);
+    /// assert_eq!(b.root().val_clone(), Some(1));
+    /// assert_eq!(b.root().left().val_clone(), Some(2));
+    /// assert_eq!(b.root().right().val_clone(), Some(3));
+    /// ```
     fn from(value: Vec<T>) -> Self {
         let v: Vec<Option<Rc<T>>> = value.into_iter().map(|i| Some(Rc::new(i))).collect();
         let x = Rc::new(RefCell::new(v));
@@ -292,6 +367,7 @@ impl<T> PartialEq for Node<T> {
 }
 
 impl<T> Clone for Node<T> {
+    #[inline]
     fn clone(&self) -> Self {
         Self {
             vec: Rc::clone(&self.vec),
