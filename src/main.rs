@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use ds_rs::{binary_tree::BinaryTree, PerfRelative};
+use ds_rs::{binary_tree::BinaryTree, rand_vec_gen, PerfRelative};
 
 #[allow(dead_code)]
 fn perf_test() {
@@ -78,39 +78,20 @@ fn perf_test() {
 }
 
 fn main() {
-    let mut v = Vec::new();
+    let mut v = rand_vec_gen(10000);
+    let v_clone = v.clone();
 
-    v.push(9);
-    v.push(7);
-    v.push(8);
-    v.push(3);
-    v.push(1);
-    v.push(5);
-    v.push(6);
-    v.push(4);
-    v.push(2);
+    let b = BinaryTree::from(v_clone);
 
-   let mut b = BinaryTree::new();
+    // let perf = PerfRelative::new("stable", "binary_tree");
 
-    b.push(9);
-    b.push(7);
-    b.push(8);
-    b.push(3);
-    b.push(1);
-    b.push(5);
-    b.push(6);
-    b.push(4);
-    b.push(2);
-
-    let inst = Instant::now();
-    let _ = b.into_sorted_vec();
-    let elpsd1 = inst.elapsed().as_micros();
     let inst = Instant::now();
     v.sort();
-    let elpsd2 = inst.elapsed().as_micros();
-
+    let elpsd1 = Instant::now() - inst;
+    let inst = Instant::now();
+    let x = b.into_sorted_vec();
+    let elpsd2 = Instant::now() - inst;
+    assert_eq!(v, x);
     dbg!(elpsd1);
     dbg!(elpsd2);
-
-
 }

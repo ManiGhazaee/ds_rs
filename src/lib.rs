@@ -1,5 +1,7 @@
 use std::{cmp::Ordering, time::Instant};
 
+use rand::Rng;
+
 pub mod binary_tree;
 pub mod linked_list;
 pub mod queue;
@@ -112,4 +114,12 @@ pub fn is_max_heap<T: PartialOrd>(vec: &Vec<binary_tree::Node<T>>) -> bool {
 
 pub fn is_min_heap<T: PartialOrd>(vec: &Vec<binary_tree::Node<T>>) -> bool {
     is_heap_by(&vec[..], |a, b| a.partial_cmp(b).unwrap())
+}
+
+pub fn rand_vec_gen(len: usize) -> Vec<isize> {
+    let mut rng = rand::thread_rng();
+    (0..len)
+        .into_iter()
+        .map(|_| rng.gen_range(isize::MIN..isize::MAX))
+        .collect()
 }

@@ -19,6 +19,7 @@ impl<T> BinaryTree<T> {
             vec: Rc::new(RefCell::new(vec![])),
         }
     }
+
     #[inline]
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
@@ -26,22 +27,27 @@ impl<T> BinaryTree<T> {
             vec: Rc::new(RefCell::new(Vec::with_capacity(capacity))),
         }
     }
+
     #[inline]
     pub fn is_empty(&self) -> bool {
         self.size.get() == 0
     }
+
     #[inline]
     pub fn len(&self) -> usize {
         self.size.get()
     }
+
     #[inline]
     pub fn capacity(&self) -> usize {
         self.vec.borrow().capacity()
     }
+
     pub fn push(&mut self, val: T) {
         self.vec.borrow_mut().push(Some(Rc::new(val)));
         self.size.set(self.size.get() + 1);
     }
+
     pub fn pop(&mut self) {
         self.vec.borrow_mut().pop();
         let s = self.size.get();
@@ -49,10 +55,12 @@ impl<T> BinaryTree<T> {
             self.size.set(s - 1);
         }
     }
+
     #[inline]
     pub fn root(&self) -> Node<T> {
         Node::new(&self.vec, &self.size, 0)
     }
+
     pub fn set_root(&self, val: T) -> Node<T> {
         if self.is_empty() {
             self.vec.borrow_mut().push(Some(Rc::new(val)));
@@ -61,10 +69,12 @@ impl<T> BinaryTree<T> {
         }
         self.root()
     }
+
     pub fn clear(&mut self) {
         self.vec.borrow_mut().clear();
         self.size = Rc::new(0.into());
     }
+
     pub fn as_vec(&self) -> Vec<Node<T>> {
         let len = self.vec.borrow().len();
         let mut res = Vec::with_capacity(len);
@@ -74,72 +84,13 @@ impl<T> BinaryTree<T> {
         }
         res
     }
+
     pub fn as_vec_raw(&self) -> Vec<Option<Rc<T>>> {
         self.vec.borrow().clone()
     }
 }
 
 impl<T: PartialOrd> BinaryTree<T> {
-    #[inline]
-    pub fn heapify_min(&mut self) {
-        self.heapify_by(|a, b| b.partial_cmp(a).unwrap());
-    }
-    #[inline]
-    pub fn heapify_max(&mut self) {
-        self.heapify_by(|a, b| a.partial_cmp(b).unwrap());
-    }
-    pub fn heapify_by<F>(&mut self, compare: F)
-    where
-        F: Fn(&T, &T) -> Ordering,
-    {
-        if self.size.get() <= 1 {
-            return;
-        }
-        self.filter_none(); 
-        let len = self.vec.borrow().len();
-        for i in (0..len).rev() {
-            self._heapify_by(&compare, i, len);
-        }
-    }
-    fn filter_none(&mut self) {
-        let mut len = self.vec.borrow().len();
-        let mut i = 0;
-        while i < len {
-            if self.vec.borrow()[i].is_none() {
-                self.vec.borrow_mut().remove(i);
-                len -= 1;
-            } else {
-                i += 1;
-            }
-        }
-    }
-    fn _heapify_by<F>(&mut self, compare: &F, root: usize, len: usize)
-    where
-        F: Fn(&T, &T) -> Ordering,
-    {
-        let root = Node::new(&self.vec, &self.size, root);
-        let mut largest = root.clone();
-        let left = largest.left();
-        let right = largest.right();
-        if left.index < len {
-            if let Some(_left) = left.val() {
-                if let Ordering::Greater = compare(&_left, &largest.val().unwrap()) {
-                    largest = left;
-                }
-            }
-        }
-        if right.index < len {
-            if let Some(_right) = right.val() {
-                if let Ordering::Greater = compare(&_right, &largest.val().unwrap()) {
-                    largest = right;
-                }
-            }
-        }
-        if largest != root {
-            self.vec.borrow_mut().swap(largest.index, root.index);
-            self._heapify_by(compare, largest.index, len);
-        }
-    }
     pub fn is_heap_by<F>(&self, compare: F) -> bool
     where
         F: Fn(&T, &T) -> Ordering,
@@ -166,10 +117,12 @@ impl<T: PartialOrd> BinaryTree<T> {
         }
         true
     }
+
     #[inline]
     pub fn is_max_heap(&self) -> bool {
         self.is_heap_by(|a, b| b.partial_cmp(a).unwrap())
     }
+
     #[inline]
     pub fn is_min_heap(&self) -> bool {
         self.is_heap_by(|a, b| a.partial_cmp(b).unwrap())
@@ -177,35 +130,118 @@ impl<T: PartialOrd> BinaryTree<T> {
 }
 
 impl<T: Clone + PartialOrd> BinaryTree<T> {
-    pub fn into_sorted_vec_by<F>(mut self, compare: F) -> Vec<T>
+    #[inline]
+    pub fn heapify_by<F>(&mut self, compare: F)
     where
         F: Fn(&T, &T) -> Ordering,
     {
-        let len = self.vec.borrow().len();
-        if len <= 1 {
-            return self
-                .vec
-                .take()
-                .into_iter()
-                .filter_map(|i| {
-                    if let Some(i) = i {
-                        Some(i.deref().to_owned())
-                    } else {
-                        None
-                    }
-                })
-                .collect();
+        let mut input: Vec<T> = self
+            .vec
+            .take()
+            .into_iter()
+            .filter_map(|i| {
+                if let Some(i) = i {
+                    Some(i.deref().to_owned())
+                } else {
+                    None
+                }
+            })
+            .collect();
+        let input_len = input.len();
+        if input_len <= 1 {
+            return;
         }
-
-        self.heapify_by(&compare);
-        let len = self.vec.borrow().len();
-
-        for i in (1..len).rev() {
-            self.vec.borrow_mut().swap(i, 0);
-            self._heapify_by(&compare, 0, i);
+        for i in (0..input.len()).rev() {
+            Self::_heapify_by(&mut input, &compare, i, input_len);
         }
+        *self.vec.borrow_mut() = input.into_iter().map(|i| Some(Rc::new(i))).collect();
+    }
 
-        self.vec
+    pub fn heapify_min(&mut self) {
+        self.heapify_by(|a, b| b.partial_cmp(a).unwrap());
+    }
+
+    pub fn heapify_max(&mut self) {
+        self.heapify_by(|a, b| a.partial_cmp(b).unwrap());
+    }
+
+    #[inline]
+    pub fn into_sorted_vec(self) -> Vec<T> {
+        Self::into_sorted_vec_by(self, |a, b| a.partial_cmp(b).unwrap())
+    }
+
+    pub fn into_sorted_vec_by<F>(self, compare: F) -> Vec<T>
+    where
+        F: Fn(&T, &T) -> Ordering,
+    {
+        let mut input: Vec<T> = self
+            .vec
+            .take()
+            .into_iter()
+            .filter_map(|i| {
+                if let Some(i) = i {
+                    Some(i.deref().to_owned())
+                } else {
+                    None
+                }
+            })
+            .collect();
+        Self::heapsort_by(&mut input, compare);
+        input
+    }
+
+    fn heapsort_by<F>(input: &mut [T], compare: F)
+    where
+        F: Fn(&T, &T) -> Ordering,
+    {
+        Self::_heapsort_by(input, &compare);
+    }
+
+    fn _heapsort_by<F>(input: &mut [T], compare: &F)
+    where
+        F: Fn(&T, &T) -> Ordering,
+    {
+        let input_len = input.len();
+        if input_len <= 1 {
+            return;
+        }
+        for i in (0..input.len()).rev() {
+            Self::_heapify_by(input, compare, i, input_len);
+        }
+        for i in (1..input.len()).rev() {
+            input.swap(i, 0);
+            Self::_heapify_by(input, compare, 0, i);
+        }
+    }
+
+    fn _heapify_by<F>(input: &mut [T], compare: &F, root: usize, len: usize)
+    where
+        F: Fn(&T, &T) -> Ordering,
+    {
+        let mut largest = root;
+        let left = root * 2 + 1;
+        let right = root * 2 + 2;
+        if left < len {
+            if let Ordering::Greater = compare(&input[left], &input[largest]) {
+                largest = left;
+            }
+        }
+        if right < len {
+            if let Ordering::Greater = compare(&input[right], &input[largest]) {
+                largest = right;
+            }
+        }
+        if largest != root {
+            input.swap(largest, root);
+            Self::_heapify_by(input, compare, largest, len);
+        }
+    }
+}
+
+impl<T: Clone> BinaryTree<T> {
+    pub fn into_vec(self) -> Vec<T> {
+        self
+            .vec
             .take()
             .into_iter()
             .filter_map(|i| {
@@ -217,9 +253,27 @@ impl<T: Clone + PartialOrd> BinaryTree<T> {
             })
             .collect()
     }
-    #[inline]
-    pub fn into_sorted_vec(self) -> Vec<T> {
-        self.into_sorted_vec_by(|a, b| a.partial_cmp(b).unwrap())
+}
+
+impl<T: Clone> From<&[T]> for BinaryTree<T> {
+    fn from(value: &[T]) -> Self {
+        let v: Vec<Option<Rc<T>>> = value
+            .to_vec()
+            .into_iter()
+            .map(|i| Some(Rc::new(i)))
+            .collect();
+        let x = Rc::new(RefCell::new(v));
+        let len = Rc::new(Cell::new(x.borrow().len()));
+        BinaryTree { size: len, vec: x }
+    }
+}
+
+impl<T> From<Vec<T>> for BinaryTree<T> {
+    fn from(value: Vec<T>) -> Self {
+        let v: Vec<Option<Rc<T>>> = value.into_iter().map(|i| Some(Rc::new(i))).collect();
+        let x = Rc::new(RefCell::new(v));
+        let len = Rc::new(Cell::new(x.borrow().len()));
+        BinaryTree { size: len, vec: x }
     }
 }
 
@@ -256,14 +310,17 @@ impl<T> Node<T> {
             index,
         }
     }
+
     pub fn left(&self) -> Node<T> {
         let index = self.index * 2 + 1;
         Node::new(&self.vec, &self.size, index)
     }
+
     pub fn right(&self) -> Node<T> {
         let index = self.index * 2 + 2;
         Node::new(&self.vec, &self.size, index)
     }
+
     pub fn parent(&self) -> Node<T> {
         if self.is_root() {
             panic!("Node is root");
@@ -271,14 +328,16 @@ impl<T> Node<T> {
         let index = (self.index - 1) / 2;
         Node::new(&self.vec, &self.size, index)
     }
+
     pub fn val(&self) -> Option<Rc<T>> {
         if let Some(i) = self.vec.borrow().get(self.index) {
             if let Some(i) = i {
-                return Some(Rc::clone(&i));
+                return Some(Rc::clone(i));
             }
         }
         None
     }
+
     /// # Panics
     /// if `self.val()` is `None`
     pub fn change(&mut self, new_val: T) {
@@ -286,6 +345,7 @@ impl<T> Node<T> {
         let x = x.get_mut(self.index).unwrap();
         *x = Some(Rc::new(new_val));
     }
+
     #[inline]
     pub const fn is_root(&self) -> bool {
         self.index == 0
@@ -317,6 +377,7 @@ impl<T: Default> Node<T> {
         ret.change(val);
         ret
     }
+
     /// # Returns
     /// returns the created new right node
     pub fn set_right(&self, val: T) -> Self {

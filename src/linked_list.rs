@@ -196,9 +196,6 @@ impl<T: Clone> LinkedList<T> {
         if index == 0 {
             return self.pop_front();
         }
-        if index == 0 {
-            return self.pop_front();
-        }
         if self.size <= 1 || index == self.size - 1 {
             return self.pop_back();
         }
