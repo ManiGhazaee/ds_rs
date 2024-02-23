@@ -1,3 +1,6 @@
+#![cfg(test)]
+use std::rc::Rc;
+
 use ds_rs::{binary_tree::BinaryTree, is_max_heap, is_min_heap};
 
 #[test]
@@ -201,6 +204,7 @@ fn test_as_vec() {
     // [0, 1, 3, None, 2, None, 4]
 
     let vec = b.as_vec();
+    let vec_raw = b.as_vec_raw();
 
     assert_eq!(vec[0].val_clone(), Some(0));
     assert_eq!(vec[1].val_clone(), Some(1));
@@ -209,6 +213,14 @@ fn test_as_vec() {
     assert_eq!(vec[4].val_clone(), Some(2));
     assert_eq!(vec[5].val_clone(), None);
     assert_eq!(vec[6].val_clone(), Some(4));
+
+    assert_eq!(vec_raw[0], Some(Rc::new(0)));
+    assert_eq!(vec_raw[1], Some(Rc::new(1)));
+    assert_eq!(vec_raw[2], Some(Rc::new(3)));
+    assert_eq!(vec_raw[3], None);
+    assert_eq!(vec_raw[4], Some(Rc::new(2)));
+    assert_eq!(vec_raw[5], None);
+    assert_eq!(vec_raw[6], Some(Rc::new(4)));
 }
 
 #[test]

@@ -56,21 +56,71 @@ impl<T> BinaryTree<T> {
         self.size.get() == 0
     }
 
+    /// # Example
+    /// ```
+    /// use ds_rs::binary_tree::BinaryTree;
+    /// let b: BinaryTree<usize> = BinaryTree::new();
+    /// assert!(b.is_empty());
+    /// b.set_root(0).set_left(2).set_right(3);
+    /// assert!(!b.is_empty());
+    /// assert_eq!(b.len(), 3);
+    /// ```
     #[inline]
     pub fn len(&self) -> usize {
         self.size.get()
     }
 
+    /// # Example
+    /// ```
+    /// use ds_rs::binary_tree::BinaryTree;
+    /// let b: BinaryTree<usize> = BinaryTree::with_capacity(100);
+    /// assert!(b.capacity() >= 100);
+    /// assert_eq!(b.len(), 0);
+    /// assert!(b.is_empty());
+    /// ```
     #[inline]
     pub fn capacity(&self) -> usize {
         self.vec.borrow().capacity()
     }
 
+    /// # Example
+    /// ```
+    /// use ds_rs::binary_tree::BinaryTree;
+    /// let mut b = BinaryTree::new();
+    /// b.push(0);
+    /// b.push(1);
+    /// b.push(2);
+    /// b.push(3);
+    /// b.push(4);
+    /// assert_eq!(b.len(), 5);
+    /// assert_eq!(b.root().val_clone(), Some(0));
+    /// assert_eq!(b.root().left().val_clone(), Some(1));
+    /// assert_eq!(b.root().right().val_clone(), Some(2));
+    /// assert_eq!(b.root().left().left().val_clone(), Some(3));
+    /// assert_eq!(b.root().left().right().val_clone(), Some(4));
+    /// ```
     pub fn push(&mut self, val: T) {
         self.vec.borrow_mut().push(Some(Rc::new(val)));
         self.size_inc();
     }
 
+    /// # Example
+    /// ```
+    /// use ds_rs::binary_tree::BinaryTree;
+    /// let mut b = BinaryTree::new();
+    /// b.push(0);
+    /// b.push(1);
+    /// b.push(2);
+    /// assert_eq!(b.len(), 3);
+    /// assert_eq!(b.root().val_clone(), Some(0));
+    /// assert_eq!(b.root().left().val_clone(), Some(1));
+    /// assert_eq!(b.root().right().val_clone(), Some(2));
+    /// b.pop();
+    /// assert_eq!(b.len(), 2);
+    /// assert_eq!(b.root().val_clone(), Some(0));
+    /// assert_eq!(b.root().left().val_clone(), Some(1));
+    /// assert_eq!(b.root().right().val_clone(), None);
+    /// ```
     pub fn pop(&mut self) {
         self.vec.borrow_mut().pop();
         self.size_dec();
@@ -89,11 +139,39 @@ impl<T> BinaryTree<T> {
         }
     }
 
+    /// # Example
+    /// ```
+    /// use ds_rs::binary_tree::BinaryTree;
+    /// let mut b = BinaryTree::new();
+    /// b.set_root(0);
+    /// assert_eq!(b.len(), 1);
+    /// assert_eq!(b.root().val_clone(), Some(0));
+    /// b.pop();
+    /// assert_eq!(b.root().val_clone(), None);
+    /// b.push(1);
+    /// assert_eq!(b.root().val_clone(), Some(1));
+    /// b.set_root(0);
+    /// assert_eq!(b.root().val_clone(), Some(0));
+    /// ```
     #[inline]
     pub fn root(&self) -> Node<T> {
         Node::new(&self.vec, &self.size, 0)
     }
 
+    /// # Example
+    /// ```
+    /// use ds_rs::binary_tree::BinaryTree;
+    /// let mut b = BinaryTree::new();
+    /// b.set_root(0);
+    /// assert_eq!(b.len(), 1);
+    /// assert_eq!(b.root().val_clone(), Some(0));
+    /// b.pop();
+    /// assert_eq!(b.root().val_clone(), None);
+    /// b.push(1);
+    /// assert_eq!(b.root().val_clone(), Some(1));
+    /// b.set_root(0);
+    /// assert_eq!(b.root().val_clone(), Some(0));
+    /// ```
     pub fn set_root(&self, val: T) -> Node<T> {
         if self.is_empty() {
             self.vec.borrow_mut().push(Some(Rc::new(val)));
@@ -104,11 +182,34 @@ impl<T> BinaryTree<T> {
         self.root()
     }
 
+    /// # Example
+    /// ```
+    /// use ds_rs::binary_tree::BinaryTree;
+    /// let mut b = BinaryTree::new();
+    /// b.push(1);
+    /// b.push(2);
+    /// b.push(3);
+    /// assert!(!b.is_empty());
+    /// b.clear();
+    /// assert!(b.is_empty());
+    /// ```
     pub fn clear(&mut self) {
         self.vec.borrow_mut().clear();
         self.size = Rc::new(0.into());
     }
 
+    /// # Example
+    /// ```
+    /// use ds_rs::binary_tree::BinaryTree;
+    /// let mut b = BinaryTree::new();
+    /// b.push(1);
+    /// b.push(2);
+    /// b.push(3);
+    /// let v = b.as_vec();
+    /// assert_eq!(v[0].val_clone(), Some(1));
+    /// assert_eq!(v[1].val_clone(), Some(2));
+    /// assert_eq!(v[2].val_clone(), Some(3));
+    /// ```
     pub fn as_vec(&self) -> Vec<Node<T>> {
         let len = self.vec.borrow().len();
         let mut res = Vec::with_capacity(len);
@@ -119,6 +220,19 @@ impl<T> BinaryTree<T> {
         res
     }
 
+    /// # Example
+    /// ```
+    /// use ds_rs::binary_tree::BinaryTree;
+    /// use std::rc::Rc;
+    /// let mut b = BinaryTree::new();
+    /// b.push(1);
+    /// b.push(2);
+    /// b.push(3);
+    /// let v = b.as_vec_raw();
+    /// assert_eq!(v[0], Some(Rc::new(1)));
+    /// assert_eq!(v[1], Some(Rc::new(2)));
+    /// assert_eq!(v[2], Some(Rc::new(3)));
+    /// ```
     #[inline]
     pub fn as_vec_raw(&self) -> Vec<Option<Rc<T>>> {
         self.vec.borrow().clone()
@@ -276,6 +390,18 @@ impl<T: Clone + PartialOrd> BinaryTree<T> {
 }
 
 impl<T: Clone> BinaryTree<T> {
+    /// # Example 
+    /// ```
+    /// use ds_rs::binary_tree::BinaryTree;
+    /// let mut b = BinaryTree::new();
+    /// b.push(1);
+    /// b.push(2);
+    /// b.push(3);
+    /// let v = b.into_vec();
+    /// assert_eq!(v[0], 1);
+    /// assert_eq!(v[1], 2);
+    /// assert_eq!(v[2], 3);
+    /// ```
     #[inline]
     pub fn into_vec(self) -> Vec<T> {
         self.vec
@@ -387,16 +513,47 @@ impl<T> Node<T> {
         }
     }
 
+    /// # Example
+    /// ```
+    /// use ds_rs::binary_tree::BinaryTree;
+    /// let b = BinaryTree::new();
+    /// b.set_root(0);
+    /// assert_eq!(b.root().left().val_clone(), None);
+    /// b.root().set_left(1);
+    /// assert_eq!(b.root().left().val_clone(), Some(1));
+    /// ```
     pub fn left(&self) -> Node<T> {
         let index = self.index * 2 + 1;
         Node::new(&self.vec, &self.size, index)
     }
 
+    /// # Example
+    /// ```
+    /// use ds_rs::binary_tree::BinaryTree;
+    /// let b = BinaryTree::new();
+    /// b.set_root(0);
+    /// assert_eq!(b.root().right().val_clone(), None);
+    /// b.root().set_right(1);
+    /// assert_eq!(b.root().right().val_clone(), Some(1));
+    /// ```
     pub fn right(&self) -> Node<T> {
         let index = self.index * 2 + 2;
         Node::new(&self.vec, &self.size, index)
     }
 
+    /// # Example
+    /// ```
+    /// use ds_rs::binary_tree::BinaryTree;
+    /// let mut b = BinaryTree::new();
+    /// b.push(0);
+    /// b.push(1);
+    /// b.push(2);
+    /// b.push(3);
+    /// assert_eq!(b.root().left().val_clone(), Some(1));
+    /// assert_eq!(b.root().left().parent().val_clone(), Some(0));
+    /// assert_eq!(b.root().left().left().val_clone(), Some(3));
+    /// assert_eq!(b.root().left().left().parent().val_clone(), Some(1));
+    /// ```
     pub fn parent(&self) -> Node<T> {
         if self.is_root() {
             panic!("Node is root");
@@ -405,6 +562,15 @@ impl<T> Node<T> {
         Node::new(&self.vec, &self.size, index)
     }
 
+    /// # Example
+    /// ```
+    /// use ds_rs::binary_tree::BinaryTree;
+    /// use std::rc::Rc;
+    /// let mut b = BinaryTree::new();
+    /// b.push(0);
+    /// let root: Option<Rc<isize>> = b.root().val();
+    /// assert_eq!(root, Some(Rc::new(0)));
+    /// ```
     pub fn val(&self) -> Option<Rc<T>> {
         if let Some(i) = self.vec.borrow().get(self.index) {
             if let Some(i) = i {
@@ -422,6 +588,16 @@ impl<T> Node<T> {
         *x = Some(Rc::new(new_val));
     }
 
+    /// # Example
+    /// ```
+    /// use ds_rs::binary_tree::BinaryTree;
+    /// let mut b = BinaryTree::new();
+    /// b.push(0);
+    /// b.push(1);
+    /// let root = b.root();
+    /// assert!(root.is_root());
+    /// assert!(root.left().parent().is_root());
+    /// ```
     #[inline]
     pub const fn is_root(&self) -> bool {
         self.index == 0
@@ -429,6 +605,14 @@ impl<T> Node<T> {
 }
 
 impl<T: Clone> Node<T> {
+    /// # Example
+    /// ```
+    /// use ds_rs::binary_tree::BinaryTree;
+    /// let mut b = BinaryTree::new();
+    /// b.push(0);
+    /// let root: Option<isize> = b.root().val_clone();
+    /// assert_eq!(root, Some(0));
+    /// ```
     #[inline]
     pub fn val_clone(&self) -> Option<T> {
         match self.val() {
@@ -441,6 +625,19 @@ impl<T: Clone> Node<T> {
 impl<T: Default> Node<T> {
     /// # Returns
     /// returns the created new left node
+    /// # Example
+    /// ```
+    /// use ds_rs::binary_tree::BinaryTree;
+    /// let mut b = BinaryTree::new();
+    /// b.push(0);
+    /// let r = b.root();
+    /// r.set_left(1);
+    /// assert_eq!(r.val_clone(), Some(0));
+    /// assert_eq!(r.left().val_clone(), Some(1));
+    /// r.set_left(3).set_left(4);
+    /// assert_eq!(r.left().val_clone(), Some(3));
+    /// assert_eq!(r.left().left().val_clone(), Some(4));
+    /// ```
     pub fn set_left(&self, val: T) -> Self {
         let index = self.index * 2 + 1;
         if index >= self.vec.borrow().len() {
@@ -456,6 +653,19 @@ impl<T: Default> Node<T> {
 
     /// # Returns
     /// returns the created new right node
+    /// # Example
+    /// ```
+    /// use ds_rs::binary_tree::BinaryTree;
+    /// let mut b = BinaryTree::new();
+    /// b.push(0);
+    /// let r = b.root();
+    /// r.set_right(1);
+    /// assert_eq!(r.val_clone(), Some(0));
+    /// assert_eq!(r.right().val_clone(), Some(1));
+    /// r.set_right(3).set_right(4);
+    /// assert_eq!(r.right().val_clone(), Some(3));
+    /// assert_eq!(r.right().right().val_clone(), Some(4));
+    /// ```
     pub fn set_right(&self, val: T) -> Self {
         let index = self.index * 2 + 2;
         if index >= self.vec.borrow().len() {
