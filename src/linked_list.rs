@@ -77,7 +77,7 @@ impl<T: Clone> LinkedList<T> {
                     front.borrow_mut().prev = None;
                 }
                 self.size -= 1;
-                return self.node_val(&ret);
+                return self.node_val(ret.as_ref());
             }
         }
         None
@@ -96,7 +96,7 @@ impl<T: Clone> LinkedList<T> {
                     back.borrow_mut().next = None;
                 }
                 self.size -= 1;
-                return self.node_val(&ret);
+                return self.node_val(ret.as_ref());
             }
         }
         None
@@ -143,8 +143,7 @@ impl<T: Clone> LinkedList<T> {
         self.size += 1;
     }
     pub fn get(&self, index: usize) -> Option<T> {
-        let rc_option = self.get_rc(index);
-        self.node_val(&rc_option)
+        self.node_val(self.get_rc(index).as_ref())
     }
     fn get_rc(&self, index: usize) -> Option<Rc<RefCell<Node<T>>>> {
         if index >= self.size {
@@ -163,11 +162,11 @@ impl<T: Clone> LinkedList<T> {
     }
     #[inline]
     pub fn front(&self) -> Option<T> {
-        self.node_val(&self.front)
+        self.node_val(self.front.as_ref())
     }
     #[inline]
     pub fn back(&self) -> Option<T> {
-        self.node_val(&self.back)
+        self.node_val(self.back.as_ref())
     }
     pub fn append(&mut self, other: &mut LinkedList<T>) {
         if let Some(other_front) = self.clone_node(other.front.as_ref()) {
@@ -212,7 +211,7 @@ impl<T: Clone> LinkedList<T> {
         after.unwrap().borrow_mut().prev = self.clone_node(Some(&before));
 
         self.size -= 1;
-        self.node_val(&current)
+        self.node_val(current.as_ref())
     }
     /// # Panics
     /// if `index >= len`
@@ -228,7 +227,7 @@ impl<T: Clone> LinkedList<T> {
         option_rc_clone(node)
     }
     #[inline]
-    fn node_val(&self, node: &Option<Rc<RefCell<Node<T>>>>) -> Option<T> {
+    fn node_val(&self, node: Option<&Rc<RefCell<Node<T>>>>) -> Option<T> {
         if let Some(node) = node {
             Some(node.borrow().val.clone())
         } else {
