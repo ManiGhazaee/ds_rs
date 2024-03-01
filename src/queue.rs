@@ -49,15 +49,15 @@ impl<T: Clone> Queue<T> {
         self.vec = vec![None; self.capacity];
         self.size = 0;
     }
-    pub fn tail(&self) -> &Option<T> {
+    pub fn tail(&self) -> Option<&T> {
         if !self.is_empty() {
-            &self.vec[self.size - 1]
+            self.vec[self.size - 1].as_ref()
         } else {
-            &None
+            None
         }
     }
-    pub fn head(&self) -> &Option<T> {
-        &self.vec[0]
+    pub fn head(&self) -> Option<&T> {
+        self.vec[0].as_ref()
     }
 }
 
