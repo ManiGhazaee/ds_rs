@@ -522,7 +522,7 @@ impl<T> Node<T> {
     /// b.root().set_left(1);
     /// assert_eq!(b.root().left().val_clone(), Some(1));
     /// ```
-    pub fn left(&self) -> Node<T> {
+    pub fn left(&self) -> Self {
         let index = self.index * 2 + 1;
         Node::new(&self.vec, &self.size, index)
     }
@@ -536,7 +536,7 @@ impl<T> Node<T> {
     /// b.root().set_right(1);
     /// assert_eq!(b.root().right().val_clone(), Some(1));
     /// ```
-    pub fn right(&self) -> Node<T> {
+    pub fn right(&self) -> Self {
         let index = self.index * 2 + 2;
         Node::new(&self.vec, &self.size, index)
     }
@@ -554,7 +554,7 @@ impl<T> Node<T> {
     /// assert_eq!(b.root().left().left().val_clone(), Some(3));
     /// assert_eq!(b.root().left().left().parent().val_clone(), Some(1));
     /// ```
-    pub fn parent(&self) -> Node<T> {
+    pub fn parent(&self) -> Self {
         if self.is_root() {
             panic!("Node is root");
         }
