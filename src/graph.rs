@@ -2,25 +2,29 @@
 
 use std::{collections::HashMap, hash::Hash};
 
+#[derive(Debug)]
 pub struct Graph<K, T, W> {
     table: HashMap<K, Node<K, T, W>>,
 }
 
+#[derive(Debug)]
 pub struct Node<K, T, W> {
     key: K,
     val: Option<T>,
     neibs: HashMap<K, W>,
 }
 
+#[derive(Debug, PartialEq)]
 pub struct Edge<'a, K, W> {
-    from: &'a K,
-    to: &'a K,
-    weight: &'a W,
+    pub from: &'a K,
+    pub to: &'a K,
+    pub weight: &'a W,
 }
 
-pub enum GraphInsertEdgeErr {
-    Node1None,
-    Node2None,
+#[derive(Debug, PartialEq)]
+pub enum InsertEdgeErr {
+    FromNone,
+    ToNone,
 }
 
 impl<K: Hash + Eq + Clone, T, W> Graph<K, T, W> {
@@ -73,19 +77,19 @@ impl<K: Hash + Eq + Clone, T, W> Graph<K, T, W> {
 
     pub fn insert_edge(
         &mut self,
-        node1_key: K,
-        node2_key: K,
+        from_node_key: K,
+        to_node_key: K,
         weight: W,
-    ) -> Result<(), GraphInsertEdgeErr> {
-        if self.table.get(&node2_key).is_some() {
-            if let Some(n1) = self.table.get_mut(&node1_key) {
-                n1.neibs.insert(node2_key, weight);
+    ) -> Result<(), InsertEdgeErr> {
+        if self.table.get(&to_node_key).is_some() {
+            if let Some(n1) = self.table.get_mut(&from_node_key) {
+                n1.neibs.insert(to_node_key, weight);
                 Ok(())
             } else {
-                Err(GraphInsertEdgeErr::Node1None)
+                Err(InsertEdgeErr::FromNone)
             }
         } else {
-            Err(GraphInsertEdgeErr::Node2None)
+            Err(InsertEdgeErr::ToNone)
         }
     }
 }
@@ -97,6 +101,10 @@ impl<K: Hash + Eq + Clone, T, W> Node<K, T, W> {
             val,
             neibs: HashMap::from(neibs),
         }
+    }
+
+    pub fn key(&self) -> &K {
+        &self.key
     }
 
     pub fn val(&self) -> Option<&T> {
@@ -115,7 +123,23 @@ impl<K: Hash + Eq + Clone, T, W> Node<K, T, W> {
         &self.neibs
     }
 
-    pub fn change_neighbor(&mut self, neib_key: K, neib_weight: W) {
+    pub fn neighbors_as_vec(&self) -> Vec<(&K, &W)> {
+        self.neibs.iter().collect()
+    }
+
+    pub fn insert_neighbor(&mut self, neib_key: K, neib_weight: W) {
         self.neibs.insert(neib_key, neib_weight);
+    }
+}
+
+impl<K: PartialEq + Hash + Eq + Clone, T: PartialEq, W: PartialEq> PartialEq for Node<K, T, W> {
+    fn eq(&self, other: &Self) -> bool {
+        self.key == other.key && self.val == other.val && self.neighbors() == other.neighbors()
+    }
+}
+
+impl<'a, K, W> Edge<'a, K, W> {
+    pub fn new(from: &'a K, to: &'a K, weight: &'a W) -> Self {
+        Edge { from, to, weight }
     }
 }
