@@ -5,6 +5,7 @@ use rand::Rng;
 pub mod binary_tree;
 pub mod linked_list;
 pub mod queue;
+pub mod graph;
 
 pub enum DurationType {
     Nano,
