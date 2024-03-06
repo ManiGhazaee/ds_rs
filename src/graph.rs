@@ -1,16 +1,16 @@
 #![allow(dead_code, unused)]
 
-use std::{collections::HashMap, hash::Hash};
+use std::{collections::{hash_map, HashMap}, hash::Hash};
 
 #[derive(Debug)]
 pub struct Graph<K, T, W> {
-    table: HashMap<K, Node<K, T, W>>,
+    map: HashMap<K, Node<K, T, W>>,
 }
 
 #[derive(Debug)]
 pub struct Node<K, T, W> {
     key: K,
-    val: Option<T>,
+    val: T,
     neibs: HashMap<K, W>,
 }
 
@@ -30,40 +30,44 @@ pub enum InsertEdgeErr {
 impl<K: Hash + Eq + Clone, T, W> Graph<K, T, W> {
     pub fn new() -> Self {
         Self {
-            table: HashMap::new(),
+            map: HashMap::new(),
         }
     }
 
     pub fn get(&self, node_key: K) -> Option<&Node<K, T, W>> {
-        self.table.get(&node_key)
+        self.map.get(&node_key)
     }
 
     pub fn get_mut(&mut self, node_key: K) -> Option<&mut Node<K, T, W>> {
-        self.table.get_mut(&node_key)
+        self.map.get_mut(&node_key)
     }
 
     pub fn contains(&self, node_key: K) -> bool {
-        self.table.contains_key(&node_key)
+        self.map.contains_key(&node_key)
     }
 
     /// # Returns
-    /// if table did have the node.key, old value is returned
-    /// if table did not have the node.key, None is returned
+    /// if map did have the node.key, old value is returned
+    /// if map did not have the node.key, None is returned
     pub fn insert(&mut self, node: Node<K, T, W>) -> Option<Node<K, T, W>> {
-        self.table.insert(node.key.clone(), node)
+        self.map.insert(node.key.clone(), node)
     }
 
     pub fn remove(&mut self, node_key: K) -> Option<Node<K, T, W>> {
-        self.table.remove(&node_key)
+        self.map.remove(&node_key)
     }
 
     pub fn nodes(&self) -> Vec<&Node<K, T, W>> {
-        self.table.values().into_iter().collect()
+        self.map.values().into_iter().collect()
+    }
+
+    pub fn nodes_len(&self) -> usize {
+        self.map.keys().len()
     }
 
     pub fn edges(&self) -> Vec<Edge<K, W>> {
         let mut ret: Vec<Edge<K, W>> = Vec::new();
-        for i in self.table.iter() {
+        for i in self.map.iter() {
             for j in i.1.neibs.iter() {
                 ret.push(Edge {
                     from: i.0,
@@ -75,14 +79,22 @@ impl<K: Hash + Eq + Clone, T, W> Graph<K, T, W> {
         ret
     }
 
+    pub fn edges_len(&self) -> usize {
+        let mut ret = 0;
+        for i in self.map.iter() {
+            ret += i.1.neibs.keys().len();
+        }
+        ret
+    }
+
     pub fn insert_edge(
         &mut self,
         from_node_key: K,
         to_node_key: K,
         weight: W,
     ) -> Result<(), InsertEdgeErr> {
-        if self.table.get(&to_node_key).is_some() {
-            if let Some(n1) = self.table.get_mut(&from_node_key) {
+        if self.map.get(&to_node_key).is_some() {
+            if let Some(n1) = self.map.get_mut(&from_node_key) {
                 n1.neibs.insert(to_node_key, weight);
                 Ok(())
             } else {
@@ -92,10 +104,16 @@ impl<K: Hash + Eq + Clone, T, W> Graph<K, T, W> {
             Err(InsertEdgeErr::ToNone)
         }
     }
+
+    pub fn iter<'a>(&'a self) -> Iter<'a, K, T, W> {
+        Iter {
+            map: self.map.iter(),
+        }
+    }
 }
 
 impl<K: Hash + Eq + Clone, T, W> Node<K, T, W> {
-    pub fn new<const N: usize>(key: K, val: Option<T>, neibs: [(K, W); N]) -> Self {
+    pub fn new<const N: usize>(key: K, val: T, neibs: [(K, W); N]) -> Self {
         Self {
             key,
             val,
@@ -103,23 +121,19 @@ impl<K: Hash + Eq + Clone, T, W> Node<K, T, W> {
         }
     }
 
-    pub fn key(&self) -> &K {
+    pub const fn key(&self) -> &K {
         &self.key
     }
 
-    pub fn val(&self) -> Option<&T> {
-        self.val.as_ref()
+    pub const fn val(&self) -> &T {
+        &self.val
     }
 
-    pub fn val_mut(&mut self) -> Option<&mut T> {
-        self.val.as_mut()
+    pub fn val_mut(&mut self) -> &mut T {
+        &mut self.val
     }
 
-    pub fn change_val(&mut self, new_val: T) {
-        self.val = Some(new_val);
-    }
-
-    pub fn neighbors(&self) -> &HashMap<K, W> {
+    pub const fn neighbors(&self) -> &HashMap<K, W> {
         &self.neibs
     }
 
@@ -129,6 +143,10 @@ impl<K: Hash + Eq + Clone, T, W> Node<K, T, W> {
 
     pub fn insert_neighbor(&mut self, neib_key: K, neib_weight: W) {
         self.neibs.insert(neib_key, neib_weight);
+    }
+
+    pub fn remove_neighbor(&mut self, neib_key: K) -> Option<W> {
+        self.neibs.remove(&neib_key)
     }
 }
 
@@ -141,5 +159,17 @@ impl<K: PartialEq + Hash + Eq + Clone, T: PartialEq, W: PartialEq> PartialEq for
 impl<'a, K, W> Edge<'a, K, W> {
     pub fn new(from: &'a K, to: &'a K, weight: &'a W) -> Self {
         Edge { from, to, weight }
+    }
+}
+
+pub struct Iter<'a, K, T, W> {
+    map: hash_map::Iter<'a, K, Node<K, T, W>>,
+}
+
+impl<'a, K, T, W> Iterator for Iter<'a, K, T, W> {
+    type Item = (&'a K, &'a Node<K, T, W>);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.map.next()  
     }
 }
