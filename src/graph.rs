@@ -1,7 +1,7 @@
 #![allow(dead_code, unused)]
 
 use std::{
-    collections::{hash_map, HashMap},
+    collections::{hash_map, HashMap, HashSet},
     fmt::{Debug, Display, Formatter},
     hash::Hash,
 };
@@ -11,7 +11,7 @@ pub struct Graph<K, T, W> {
     map: HashMap<K, Node<K, T, W>>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Node<K, T, W> {
     key: K,
     val: T,
@@ -31,7 +31,10 @@ pub enum EdgeErr {
     ToNone,
 }
 
-impl<K: Hash + Eq + Clone, T, W> Graph<K, T, W> {
+impl<K, T, W> Graph<K, T, W>
+where
+    K: Hash + Eq + Clone,
+{
     pub fn new() -> Self {
         Self {
             map: HashMap::new(),
@@ -66,7 +69,7 @@ impl<K: Hash + Eq + Clone, T, W> Graph<K, T, W> {
     }
 
     pub fn nodes_len(&self) -> usize {
-        self.map.keys().len()
+        self.map.len()
     }
 
     pub fn edges(&self) -> Vec<Edge<K, W>> {
@@ -86,7 +89,7 @@ impl<K: Hash + Eq + Clone, T, W> Graph<K, T, W> {
     pub fn edges_len(&self) -> usize {
         let mut ret = 0;
         for i in self.map.iter() {
-            ret += i.1.neibs.keys().len();
+            ret += i.1.neibs.len();
         }
         ret
     }
@@ -147,6 +150,21 @@ impl<K: Hash + Eq + Clone, T, W> Graph<K, T, W> {
         }
     }
 
+    /// # Error
+    /// if graph doesn't contain `from_node_key`'s Node, returns `Err(EdgeErr::FromNone)`.
+    ///
+    /// if `from_node_key`'s Node doesn't contain `to_node_key` neighbor, returns `Err(EdgeErr::ToNone)`.
+    pub fn get_weight_mut(&mut self, from_node_key: K, to_node_key: K) -> Result<&mut W, EdgeErr> {
+        if let Some(n1) = self.map.get_mut(&from_node_key) {
+            match n1.neibs.get_mut(&to_node_key) {
+                Some(w) => Ok(w),
+                None => Err(EdgeErr::ToNone),
+            }
+        } else {
+            Err(EdgeErr::FromNone)
+        }
+    }
+
     pub fn iter<'a>(&'a self) -> Iter<'a, K, T, W> {
         Iter {
             map: self.map.iter(),
@@ -158,9 +176,66 @@ impl<K: Hash + Eq + Clone, T, W> Graph<K, T, W> {
             map: self.map.iter_mut(),
         }
     }
+
+    pub fn clear(&mut self) {
+        self.map.clear();
+    }
+
+    pub fn dfs_iter<'a>(&'a self, start_node_key: &'a K) -> DfsIter<'a, K, T, W> {
+        DfsIter::new(&self.map, start_node_key)
+    }
 }
 
-impl<K: Hash + Eq + Clone, T, W> Node<K, T, W> {
+pub struct DfsIter<'a, K, T, W> {
+    map: &'a HashMap<K, Node<K, T, W>>,
+    stack: Vec<&'a Node<K, T, W>>,
+    visited: HashSet<&'a K>,
+}
+
+impl<'a, K, T, W> DfsIter<'a, K, T, W>
+where
+    K: Hash + Eq + Clone,
+{
+    /// # Panics
+    /// if graph doesn't contain `start_node`.
+    pub fn new(map: &'a HashMap<K, Node<K, T, W>>, start_node_key: &'a K) -> Self {
+        let mut visited = HashSet::new();
+        visited.insert(start_node_key);
+        let start_node = map.get(start_node_key).unwrap();
+        let mut stack = Vec::new();
+        stack.push(start_node);
+
+        Self {
+            map,
+            stack,
+            visited,
+        }
+    }
+}
+
+impl<'a, K, T, W> Iterator for DfsIter<'a, K, T, W>
+where
+    K: Eq + Hash + Eq + Clone,
+{
+    type Item = &'a Node<K, T, W>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let current_node = self.stack.pop()?;
+        for (neighbour_key, _) in current_node.neighbors() {
+            if !self.visited.contains(neighbour_key) {
+                let neighbour_node = self.map.get(neighbour_key).unwrap();
+                self.stack.push(neighbour_node);
+                self.visited.insert(neighbour_key);
+            }
+        }
+        Some(current_node)
+    }
+}
+
+impl<K, T, W> Node<K, T, W>
+where
+    K: Hash + Eq + Clone,
+{
     pub fn new(key: K, val: T) -> Self {
         Self {
             key,
@@ -194,7 +269,12 @@ impl<K: Hash + Eq + Clone, T, W> Node<K, T, W> {
     }
 }
 
-impl<K: PartialEq + Hash + Eq + Clone, T: PartialEq, W: PartialEq> PartialEq for Node<K, T, W> {
+impl<K, T, W> PartialEq for Node<K, T, W>
+where
+    K: PartialEq + Hash + Eq + Clone,
+    T: PartialEq,
+    W: PartialEq,
+{
     fn eq(&self, other: &Self) -> bool {
         self.key == other.key && self.val == other.val && self.neighbors() == other.neighbors()
     }
@@ -257,7 +337,12 @@ impl<K, T, W> IntoIterator for Graph<K, T, W> {
     }
 }
 
-impl<K: Hash + Eq + Clone + Debug, T: Debug, W: Debug> Display for Graph<K, T, W> {
+impl<K, T, W> Display for Graph<K, T, W>
+where
+    K: Hash + Eq + Clone + Debug,
+    T: Debug,
+    W: Debug,
+{
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         writeln!(f, "Graph {{");
         writeln!(f, "    nodes: [");
@@ -275,13 +360,26 @@ impl<K: Hash + Eq + Clone + Debug, T: Debug, W: Debug> Display for Graph<K, T, W
     }
 }
 
-impl<K: Debug, T: Debug, W: Debug> Display for Node<K, W, T> {
+impl<K, T, W> Display for Node<K, W, T>
+where
+    K: Debug,
+    T: Debug,
+    W: Debug,
+{
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "Node {{ key: {:?}, val: {:?}, neibs: {:?} }}", self.key, self.val, self.neibs)
+        writeln!(
+            f,
+            "Node {{ key: {:?}, val: {:?}, neibs: {:?} }}",
+            self.key, self.val, self.neibs
+        )
     }
 }
 
-impl<'a, K: Debug, W: Debug> Display for Edge<'a, K, W> {
+impl<'a, K, W> Display for Edge<'a, K, W>
+where
+    K: Debug,
+    W: Debug,
+{
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         writeln!(
             f,
