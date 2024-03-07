@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use ds_rs::graph::{Edge, Graph, EdgeErr, Node};
+use ds_rs::graph::{Edge, EdgeErr, Graph, Node};
 
 #[test]
 fn test_basic() {
@@ -8,9 +8,9 @@ fn test_basic() {
     assert_eq!(g.nodes_len(), 0);
     assert_eq!(g.edges_len(), 0);
 
-    g.insert(Node::new(1, '3', []));
+    g.insert(Node::new(1, '3'));
 
-    assert_eq!(g.get(1), Some(&Node::new(1, '3', [])));
+    assert_eq!(g.get(1), Some(&Node::new(1, '3')));
     assert!(g.get(1).unwrap().neighbors().is_empty());
     assert_eq!(g.get(1).unwrap().val(), &'3');
     assert_eq!(g.get(1).unwrap().key(), &1);
@@ -26,7 +26,8 @@ fn test_basic() {
         _ => panic!(),
     }
 
-    g.insert(Node::new(2, '8', [(1, 200)]));
+    g.insert(Node::new(2, '8'));
+    g.insert_edge(2, 1, 200).unwrap();
     g.insert_edge(1, 2, 400).unwrap();
 
     assert_eq!(g.get(2).unwrap().neighbors_as_vec(), vec![(&1, &200)]);
@@ -36,18 +37,21 @@ fn test_basic() {
     assert!(edges.contains(&Edge::new(&2, &1, &200)));
     assert!(edges.contains(&Edge::new(&1, &2, &400)));
     assert_eq!(g.nodes_len(), 2);
+
+    assert_eq!(g.get_weight(2, 1).unwrap(), &200);
+    assert_eq!(g.get_weight(1, 2).unwrap(), &400);
 }
 
 #[test]
 fn test_iter() {
-    let mut g = Graph::new();
+    let mut g: Graph<i32, i32, i32> = Graph::new();
 
-    g.insert(Node::new(0, 0, [(0, 0)]));
-    g.insert(Node::new(1, 1, [(0, 0)]));
-    g.insert(Node::new(2, 2, [(0, 0)]));
-    g.insert(Node::new(3, 3, [(0, 0)]));
-    g.insert(Node::new(4, 4, [(0, 0)]));
-    g.insert(Node::new(5, 5, [(0, 0)]));
+    g.insert(Node::new(0, 0));
+    g.insert(Node::new(1, 1));
+    g.insert(Node::new(2, 2));
+    g.insert(Node::new(3, 3));
+    g.insert(Node::new(4, 4));
+    g.insert(Node::new(5, 5));
 
     let mut res = Vec::new();
     let mut res_nodes = Vec::new();

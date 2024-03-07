@@ -1,6 +1,10 @@
 #![allow(dead_code, unused)]
 
-use std::{collections::{hash_map, HashMap}, fmt::{Debug, Display, Formatter}, hash::Hash};
+use std::{
+    collections::{hash_map, HashMap},
+    fmt::{Debug, Display, Formatter},
+    hash::Hash,
+};
 
 #[derive(Debug)]
 pub struct Graph<K, T, W> {
@@ -89,7 +93,7 @@ impl<K: Hash + Eq + Clone, T, W> Graph<K, T, W> {
 
     /// # Error
     /// if graph doesn't contain to_node_key returns `Err(EdgeErr::ToNone)`.
-    /// 
+    ///
     /// if graph doesn't contain from_node_key returns `Err(EdgeErr::FromNone)`.
     pub fn insert_edge(
         &mut self,
@@ -109,24 +113,37 @@ impl<K: Hash + Eq + Clone, T, W> Graph<K, T, W> {
         }
     }
 
+    /// # Returns
+    /// if `from_node_key`'s `Node` contains neighbor `to_node_key` returns old weight.
+    ///
     /// # Error
-    /// if graph doesn't contain to_node_key returns `Err(EdgeErr::ToNone)`.
-    /// 
-    /// if graph doesn't contain from_node_key returns `Err(EdgeErr::FromNone)`.
-    pub fn remove_edge(
-        &mut self,
-        from_node_key: K,
-        to_node_key: K,
-    ) -> Result<(), EdgeErr> {
+    /// if graph doesn't contain `to_node_key` returns `Err(EdgeErr::ToNone)`.
+    ///
+    /// if graph doesn't contain `from_node_key` returns `Err(EdgeErr::FromNone)`.
+    pub fn remove_edge(&mut self, from_node_key: K, to_node_key: K) -> Result<Option<W>, EdgeErr> {
         if self.map.contains_key(&to_node_key) {
             if let Some(n1) = self.map.get_mut(&from_node_key) {
-                n1.neibs.remove(&to_node_key);
-                Ok(())
+                Ok(n1.neibs.remove(&to_node_key))
             } else {
                 Err(EdgeErr::FromNone)
             }
         } else {
             Err(EdgeErr::ToNone)
+        }
+    }
+
+    /// # Error
+    /// if graph doesn't contain `from_node_key`'s Node, returns `Err(EdgeErr::FromNone)`.
+    ///
+    /// if `from_node_key`'s Node doesn't contain `to_node_key` neighbor, returns `Err(EdgeErr::ToNone)`.
+    pub fn get_weight(&self, from_node_key: K, to_node_key: K) -> Result<&W, EdgeErr> {
+        if let Some(n1) = self.map.get(&from_node_key) {
+            match n1.neibs.get(&to_node_key) {
+                Some(w) => Ok(w),
+                None => Err(EdgeErr::ToNone),
+            }
+        } else {
+            Err(EdgeErr::FromNone)
         }
     }
 
@@ -138,11 +155,11 @@ impl<K: Hash + Eq + Clone, T, W> Graph<K, T, W> {
 }
 
 impl<K: Hash + Eq + Clone, T, W> Node<K, T, W> {
-    pub fn new<const N: usize>(key: K, val: T, neibs: [(K, W); N]) -> Self {
+    pub fn new(key: K, val: T) -> Self {
         Self {
             key,
             val,
-            neibs: HashMap::from(neibs),
+            neibs: HashMap::new(),
         }
     }
 
@@ -191,7 +208,7 @@ impl<'a, K, T, W> Iterator for Iter<'a, K, T, W> {
     type Item = (&'a K, &'a Node<K, T, W>);
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.map.next()  
+        self.map.next()
     }
 }
 
@@ -199,9 +216,9 @@ impl<K: Hash + Eq + Clone + Debug, T: Debug, W: Debug> Display for Graph<K, T, W
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         writeln!(f, "Graph {{");
         writeln!(f, "    nodes: [");
-        for (k, v)  in self.iter() {
+        for (k, v) in self.iter() {
             writeln!(f, "        {{ key: {:?}, val: {:?} }},", k, v.val);
-        } 
+        }
         writeln!(f, "    ]");
         writeln!(f, "\n    edges: [");
         for i in self.edges().iter() {
@@ -215,6 +232,10 @@ impl<K: Hash + Eq + Clone + Debug, T: Debug, W: Debug> Display for Graph<K, T, W
 
 impl<'a, K: Display, W: Display> Display for Edge<'a, K, W> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "{{ from: {}, to: {}, weight: {}", self.from, self.to, self.weight)
+        writeln!(
+            f,
+            "{{ from: {}, to: {}, weight: {} }}",
+            self.from, self.to, self.weight
+        )
     }
 }
