@@ -152,6 +152,12 @@ impl<K: Hash + Eq + Clone, T, W> Graph<K, T, W> {
             map: self.map.iter(),
         }
     }
+
+    pub fn iter_mut<'a>(&'a mut self) -> IterMut<'a, K, T, W> {
+        IterMut {
+            map: self.map.iter_mut(),
+        }
+    }
 }
 
 impl<K: Hash + Eq + Clone, T, W> Node<K, T, W> {
@@ -212,6 +218,45 @@ impl<'a, K, T, W> Iterator for Iter<'a, K, T, W> {
     }
 }
 
+pub struct IterMut<'a, K, T, W> {
+    map: hash_map::IterMut<'a, K, Node<K, T, W>>,
+}
+
+impl<'a, K, T, W> Iterator for IterMut<'a, K, T, W> {
+    type Item = (&'a K, &'a mut Node<K, T, W>);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.map.next()
+    }
+}
+
+impl<'a, K, T, W> IntoIterator for &'a Graph<K, T, W> {
+    type Item = (&'a K, &'a Node<K, T, W>);
+    type IntoIter = hash_map::Iter<'a, K, Node<K, T, W>>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.map.iter()
+    }
+}
+
+impl<'a, K, T, W> IntoIterator for &'a mut Graph<K, T, W> {
+    type Item = (&'a K, &'a mut Node<K, T, W>);
+    type IntoIter = hash_map::IterMut<'a, K, Node<K, T, W>>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.map.iter_mut()
+    }
+}
+
+impl<K, T, W> IntoIterator for Graph<K, T, W> {
+    type Item = (K, Node<K, T, W>);
+    type IntoIter = hash_map::IntoIter<K, Node<K, T, W>>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.map.into_iter()
+    }
+}
+
 impl<K: Hash + Eq + Clone + Debug, T: Debug, W: Debug> Display for Graph<K, T, W> {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         writeln!(f, "Graph {{");
@@ -230,11 +275,17 @@ impl<K: Hash + Eq + Clone + Debug, T: Debug, W: Debug> Display for Graph<K, T, W
     }
 }
 
-impl<'a, K: Display, W: Display> Display for Edge<'a, K, W> {
+impl<K: Debug, T: Debug, W: Debug> Display for Node<K, W, T> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Node {{ key: {:?}, val: {:?}, neibs: {:?} }}", self.key, self.val, self.neibs)
+    }
+}
+
+impl<'a, K: Debug, W: Debug> Display for Edge<'a, K, W> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         writeln!(
             f,
-            "{{ from: {}, to: {}, weight: {} }}",
+            "{{ from: {:?}, to: {:?}, weight: {:?} }}",
             self.from, self.to, self.weight
         )
     }

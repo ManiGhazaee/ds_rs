@@ -68,4 +68,10 @@ fn test_iter() {
     assert!(!res.contains(&6));
 
     assert_eq!(res_nodes.len(), 6);
+
+    for (k, v) in g {
+        println!("{}", k);
+        println!("{}", v);
+    }
 }
+
