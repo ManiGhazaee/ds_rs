@@ -22,7 +22,7 @@ pub struct Edge<'a, K, W> {
 }
 
 #[derive(Debug, PartialEq)]
-pub enum InsertEdgeErr {
+pub enum EdgeErr {
     FromNone,
     ToNone,
 }
@@ -87,21 +87,46 @@ impl<K: Hash + Eq + Clone, T, W> Graph<K, T, W> {
         ret
     }
 
+    /// # Error
+    /// if graph doesn't contain to_node_key returns `Err(EdgeErr::ToNone)`.
+    /// 
+    /// if graph doesn't contain from_node_key returns `Err(EdgeErr::FromNone)`.
     pub fn insert_edge(
         &mut self,
         from_node_key: K,
         to_node_key: K,
         weight: W,
-    ) -> Result<(), InsertEdgeErr> {
-        if self.map.get(&to_node_key).is_some() {
+    ) -> Result<(), EdgeErr> {
+        if self.map.contains_key(&to_node_key) {
             if let Some(n1) = self.map.get_mut(&from_node_key) {
                 n1.neibs.insert(to_node_key, weight);
                 Ok(())
             } else {
-                Err(InsertEdgeErr::FromNone)
+                Err(EdgeErr::FromNone)
             }
         } else {
-            Err(InsertEdgeErr::ToNone)
+            Err(EdgeErr::ToNone)
+        }
+    }
+
+    /// # Error
+    /// if graph doesn't contain to_node_key returns `Err(EdgeErr::ToNone)`.
+    /// 
+    /// if graph doesn't contain from_node_key returns `Err(EdgeErr::FromNone)`.
+    pub fn remove_edge(
+        &mut self,
+        from_node_key: K,
+        to_node_key: K,
+    ) -> Result<(), EdgeErr> {
+        if self.map.contains_key(&to_node_key) {
+            if let Some(n1) = self.map.get_mut(&from_node_key) {
+                n1.neibs.remove(&to_node_key);
+                Ok(())
+            } else {
+                Err(EdgeErr::FromNone)
+            }
+        } else {
+            Err(EdgeErr::ToNone)
         }
     }
 
@@ -139,10 +164,6 @@ impl<K: Hash + Eq + Clone, T, W> Node<K, T, W> {
 
     pub fn neighbors_as_vec(&self) -> Vec<(&K, &W)> {
         self.neibs.iter().collect()
-    }
-
-    pub fn insert_neighbor(&mut self, neib_key: K, neib_weight: W) {
-        self.neibs.insert(neib_key, neib_weight);
     }
 
     pub fn remove_neighbor(&mut self, neib_key: K) -> Option<W> {

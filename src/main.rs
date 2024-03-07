@@ -1,4 +1,4 @@
-use ds_rs::{graph::{self, Graph}, PerfRelative};
+use ds_rs::PerfRelative;
 
 #[allow(dead_code)]
 fn perf_test() {
@@ -76,8 +76,4 @@ fn perf_test() {
 }
 
 fn main() {
-    let mut g = Graph::new();
-    g.insert(graph::Node::new(1, '2', [(2, 1)]));
-    g.insert(graph::Node::new(2, '3', [(1, 1)]));
-    println!("{}", g);
 }
