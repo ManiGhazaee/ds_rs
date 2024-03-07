@@ -1,6 +1,6 @@
 #![allow(dead_code, unused)]
 
-use std::{collections::{hash_map, HashMap}, hash::Hash};
+use std::{collections::{hash_map, HashMap}, fmt::{Debug, Display, Formatter}, hash::Hash};
 
 #[derive(Debug)]
 pub struct Graph<K, T, W> {
@@ -171,5 +171,29 @@ impl<'a, K, T, W> Iterator for Iter<'a, K, T, W> {
 
     fn next(&mut self) -> Option<Self::Item> {
         self.map.next()  
+    }
+}
+
+impl<K: Hash + Eq + Clone + Debug, T: Debug, W: Debug> Display for Graph<K, T, W> {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        writeln!(f, "Graph {{");
+        writeln!(f, "    nodes: [");
+        for (k, v)  in self.iter() {
+            writeln!(f, "        {{ key: {:?}, val: {:?} }},", k, v.val);
+        } 
+        writeln!(f, "    ]");
+        writeln!(f, "\n    edges: [");
+        for i in self.edges().iter() {
+            writeln!(f, "        {:?},", i);
+        }
+        writeln!(f, "    ]");
+        writeln!(f, "}}");
+        Ok(())
+    }
+}
+
+impl<'a, K: Display, W: Display> Display for Edge<'a, K, W> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "{{ from: {}, to: {}, weight: {}", self.from, self.to, self.weight)
     }
 }
