@@ -1,6 +1,10 @@
 use std::time::Instant;
 
-use ds_rs::{graph::{self, Graph}, PerfRelative};
+use ds_rs::{
+    graph::{self, Graph},
+    matrix::MatrixVec,
+    PerfRelative,
+};
 
 #[allow(dead_code)]
 fn perf_test() {
@@ -100,8 +104,12 @@ fn main() {
     g.insert_edge('G', 'H', 1).unwrap();
 
     let inst = Instant::now();
-    dbg!(g.dijkstra_shortest_path(&'A', &'H'));
+    let res = g.dijkstra_shortest_path(&'A', &'H');
     dbg!(inst.elapsed());
+    dbg!(res);
 
+    let m1: MatrixVec<usize> = MatrixVec::from([[1, 2], [4, 5], [7, 8]]);
+    let m2: MatrixVec<usize> = MatrixVec::from([[1, 2, 3, 0], [4, 5, 6, 7]]);
+
+    dbg!(m1.mult(&m2));
 }
-
