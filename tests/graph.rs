@@ -10,10 +10,10 @@ fn test_basic() {
 
     g.insert(Node::new(1, '3'));
 
-    assert_eq!(g.get(1), Some(&Node::new(1, '3')));
-    assert!(g.get(1).unwrap().neighbors().is_empty());
-    assert_eq!(g.get(1).unwrap().val(), &'3');
-    assert_eq!(g.get(1).unwrap().key(), &1);
+    assert_eq!(g.get(&1), Some(&Node::new(1, '3')));
+    assert!(g.get(&1).unwrap().neighbors().is_empty());
+    assert_eq!(g.get(&1).unwrap().val(), &'3');
+    assert_eq!(g.get(&1).unwrap().key(), &1);
     assert_eq!(g.nodes_len(), 1);
     assert_eq!(g.edges_len(), 0);
 
@@ -30,8 +30,8 @@ fn test_basic() {
     g.insert_edge(2, 1, 200).unwrap();
     g.insert_edge(1, 2, 400).unwrap();
 
-    assert_eq!(g.get(2).unwrap().neighbors_as_vec(), vec![(&1, &200)]);
-    assert_eq!(g.get(1).unwrap().neighbors_as_vec(), vec![(&2, &400)]);
+    assert_eq!(g.get(&2).unwrap().neighbors_as_vec(), vec![(&1, &200)]);
+    assert_eq!(g.get(&1).unwrap().neighbors_as_vec(), vec![(&2, &400)]);
     let edges = g.edges();
     assert_eq!(edges.len(), 2);
     assert!(edges.contains(&Edge::new(&2, &1, &200)));
@@ -99,7 +99,7 @@ fn test_insert_node() {
     let node = Node::new(1, 10);
     graph.insert(node.clone());
     assert_eq!(graph.nodes_len(), 1);
-    assert_eq!(graph.get(1), Some(&node));
+    assert_eq!(graph.get(&1), Some(&node));
 }
 
 #[test]
@@ -117,8 +117,8 @@ fn test_contains_node() {
     let mut graph = Graph::<i32, i32, i32>::new();
     let node = Node::new(1, 10);
     graph.insert(node.clone());
-    assert!(graph.contains(1));
-    assert!(!graph.contains(2));
+    assert!(graph.contains(&1));
+    assert!(!graph.contains(&2));
 }
 
 #[test]
@@ -170,8 +170,8 @@ fn test_error_conditions() {
     assert_eq!(graph.get_weight_mut(1, 2), Err(EdgeErr::ToNone));
 
     assert_eq!(graph.remove(2), None);
-    assert_eq!(graph.get(2), None);
-    assert!(!graph.contains(2));
+    assert_eq!(graph.get(&2), None);
+    assert!(!graph.contains(&2));
 }
 
 #[test]
@@ -194,6 +194,30 @@ fn test_dfs_iter() {
     let dfs_iter = graph.dfs_iter(&1);
 
     let visited_nodes: Vec<Node<i32, &str, i32>> = dfs_iter.map(|i| i.to_owned()).collect();
+
+    assert_eq!(visited_nodes.len(), 4);
+}
+
+#[test]
+fn test_bfs_iter() {
+    let mut graph = Graph::<i32, &str, i32>::new();
+    let node1 = Node::new(1, "1");
+    let node2 = Node::new(2, "2");
+    let node3 = Node::new(3, "3");
+    let node4 = Node::new(4, "4");
+
+    graph.insert(node1);
+    graph.insert(node2);
+    graph.insert(node3);
+    graph.insert(node4);
+
+    graph.insert_edge(1, 2, 10).unwrap();
+    graph.insert_edge(1, 3, 20).unwrap();
+    graph.insert_edge(2, 4, 30).unwrap();
+
+    let bfs_iter = graph.bfs_iter(&1);
+
+    let visited_nodes: Vec<Node<i32, &str, i32>> = bfs_iter.map(|i| i.to_owned()).collect();
 
     assert_eq!(visited_nodes.len(), 4);
 }

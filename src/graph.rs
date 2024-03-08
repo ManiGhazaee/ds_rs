@@ -1,7 +1,6 @@
-#![allow(dead_code, unused)]
-
 use std::{
-    collections::{hash_map, HashMap, HashSet},
+    cmp::{Ordering, Reverse},
+    collections::{hash_map, BinaryHeap, HashMap, HashSet, VecDeque},
     fmt::{Debug, Display, Formatter},
     hash::Hash,
 };
@@ -41,16 +40,16 @@ where
         }
     }
 
-    pub fn get(&self, node_key: K) -> Option<&Node<K, T, W>> {
-        self.map.get(&node_key)
+    pub fn get(&self, node_key: &K) -> Option<&Node<K, T, W>> {
+        self.map.get(node_key)
     }
 
-    pub fn get_mut(&mut self, node_key: K) -> Option<&mut Node<K, T, W>> {
-        self.map.get_mut(&node_key)
+    pub fn get_mut(&mut self, node_key: &K) -> Option<&mut Node<K, T, W>> {
+        self.map.get_mut(node_key)
     }
 
-    pub fn contains(&self, node_key: K) -> bool {
-        self.map.contains_key(&node_key)
+    pub fn contains(&self, node_key: &K) -> bool {
+        self.map.contains_key(node_key)
     }
 
     /// # Returns
@@ -96,7 +95,6 @@ where
 
     /// # Error
     /// if graph doesn't contain to_node_key returns `Err(EdgeErr::ToNone)`.
-    ///
     /// if graph doesn't contain from_node_key returns `Err(EdgeErr::FromNone)`.
     pub fn insert_edge(
         &mut self,
@@ -121,7 +119,6 @@ where
     ///
     /// # Error
     /// if graph doesn't contain `to_node_key` returns `Err(EdgeErr::ToNone)`.
-    ///
     /// if graph doesn't contain `from_node_key` returns `Err(EdgeErr::FromNone)`.
     pub fn remove_edge(&mut self, from_node_key: K, to_node_key: K) -> Result<Option<W>, EdgeErr> {
         if self.map.contains_key(&to_node_key) {
@@ -137,7 +134,6 @@ where
 
     /// # Error
     /// if graph doesn't contain `from_node_key`'s Node, returns `Err(EdgeErr::FromNone)`.
-    ///
     /// if `from_node_key`'s Node doesn't contain `to_node_key` neighbor, returns `Err(EdgeErr::ToNone)`.
     pub fn get_weight(&self, from_node_key: K, to_node_key: K) -> Result<&W, EdgeErr> {
         if let Some(n1) = self.map.get(&from_node_key) {
@@ -152,7 +148,6 @@ where
 
     /// # Error
     /// if graph doesn't contain `from_node_key`'s Node, returns `Err(EdgeErr::FromNone)`.
-    ///
     /// if `from_node_key`'s Node doesn't contain `to_node_key` neighbor, returns `Err(EdgeErr::ToNone)`.
     pub fn get_weight_mut(&mut self, from_node_key: K, to_node_key: K) -> Result<&mut W, EdgeErr> {
         if let Some(n1) = self.map.get_mut(&from_node_key) {
@@ -184,51 +179,118 @@ where
     pub fn dfs_iter<'a>(&'a self, start_node_key: &'a K) -> DfsIter<'a, K, T, W> {
         DfsIter::new(&self.map, start_node_key)
     }
-}
 
-pub struct DfsIter<'a, K, T, W> {
-    map: &'a HashMap<K, Node<K, T, W>>,
-    stack: Vec<&'a Node<K, T, W>>,
-    visited: HashSet<&'a K>,
-}
-
-impl<'a, K, T, W> DfsIter<'a, K, T, W>
-where
-    K: Hash + Eq + Clone,
-{
-    /// # Panics
-    /// if graph doesn't contain `start_node`.
-    pub fn new(map: &'a HashMap<K, Node<K, T, W>>, start_node_key: &'a K) -> Self {
-        let mut visited = HashSet::new();
-        visited.insert(start_node_key);
-        let start_node = map.get(start_node_key).unwrap();
-        let mut stack = Vec::new();
-        stack.push(start_node);
-
-        Self {
-            map,
-            stack,
-            visited,
-        }
+    pub fn bfs_iter<'a>(&'a self, start_node_key: &'a K) -> BfsIter<'a, K, T, W> {
+        BfsIter::new(&self.map, start_node_key)
     }
 }
 
-impl<'a, K, T, W> Iterator for DfsIter<'a, K, T, W>
-where
-    K: Eq + Hash + Eq + Clone,
-{
-    type Item = &'a Node<K, T, W>;
+struct DijkstraPair<K, W>(K, W);
 
-    fn next(&mut self) -> Option<Self::Item> {
-        let current_node = self.stack.pop()?;
-        for (neighbour_key, _) in current_node.neighbors() {
-            if !self.visited.contains(neighbour_key) {
-                let neighbour_node = self.map.get(neighbour_key).unwrap();
-                self.stack.push(neighbour_node);
-                self.visited.insert(neighbour_key);
+impl<K, W> PartialEq for DijkstraPair<K, W>
+where
+    W: PartialEq,
+{
+    fn eq(&self, other: &Self) -> bool {
+        self.1 == other.1
+    }
+}
+impl<K, W> PartialOrd for DijkstraPair<K, W>
+where
+    W: PartialOrd,
+{
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        self.1.partial_cmp(&other.1)
+    }
+}
+impl<K, W> Eq for DijkstraPair<K, W> where W: Eq {}
+impl<K, W> Ord for DijkstraPair<K, W>
+where
+    W: Ord,
+{
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.1.cmp(&other.1)
+    }
+}
+
+impl<K, T> Graph<K, T, usize>
+where
+    K: Hash + Eq + Clone,
+{
+    pub fn dijkstra_shortest_path<'a>(
+        &'a self,
+        start_node_key: &'a K,
+        dest_node_key: &'a K,
+    ) -> Option<Vec<&'a K>>
+    where
+        K: Hash + Eq + Clone,
+    {
+        let mut prio: BinaryHeap<Reverse<DijkstraPair<&K, usize>>> = BinaryHeap::new();
+        let mut dist: HashMap<&K, usize> = self.map.keys().map(|k| (k, usize::MAX)).collect();
+        let mut prev: HashMap<&K, Option<&K>> = HashMap::new();
+        let mut visited = HashSet::new();
+
+        visited.insert(start_node_key);
+        prio.push(Reverse(DijkstraPair(start_node_key, 0)));
+        *dist.get_mut(start_node_key).unwrap() = 0;
+
+        while let Some(Reverse(DijkstraPair(current_node_key, _current_dist))) = prio.pop() {
+            let current_node = self.get(&current_node_key).unwrap();
+            if current_node_key == dest_node_key {
+                let mut path = vec![current_node_key];
+                let mut node = current_node_key;
+                while let Some(prev_node) = prev.get(node) {
+                    path.push(&prev_node.unwrap());
+                    node = &prev_node.unwrap();
+                }
+                path.reverse();
+                return Some(path);
             }
+
+            for (neib_k, neib_w) in current_node.neighbors() {
+                let new_dist = neib_w + dist.get(&current_node.key).unwrap();
+                if new_dist < *dist.get(neib_k).unwrap() {
+                    *dist.get_mut(neib_k).unwrap() = new_dist;
+                    prio.push(Reverse(DijkstraPair(neib_k, new_dist)));
+                    prev.insert(neib_k, Some(current_node_key));
+                }
+            }
+            visited.insert(current_node_key);
         }
-        Some(current_node)
+
+        None
+    }
+
+    pub fn dijkstra_shortest_dist<'a>(
+        &self,
+        start_node_key: &'a K,
+    ) -> Vec<(&K, usize)> {
+        let mut prio: BinaryHeap<Reverse<DijkstraPair<&K, usize>>> = BinaryHeap::new();
+        let mut dist: HashMap<&K, usize> = self.map.keys().map(|k| (k, usize::MAX)).collect();
+        let mut visited = HashSet::new();
+
+        visited.insert(start_node_key);
+        prio.push(Reverse(DijkstraPair(&start_node_key, 0)));
+        *dist.get_mut(start_node_key).unwrap() = 0;
+
+        while let Some(pair) = prio.pop() {
+            let current_node = self.get(&pair.0 .0).unwrap();
+            for i in current_node.neighbors() {
+                let neib_w = i.1;
+                let neib_k = i.0;
+                let new_dist = neib_w + dist.get(&current_node.key).unwrap();
+                if *dist.get(neib_k).unwrap() > new_dist {
+                    *dist.get_mut(neib_k).unwrap() = new_dist;
+                };
+
+                if !visited.contains(neib_k) {
+                    prio.push(Reverse(DijkstraPair(neib_k, *neib_w)));
+                }
+            }
+            visited.insert(&current_node.key);
+        }
+
+        dist.into_iter().collect()
     }
 }
 
@@ -283,6 +345,98 @@ where
 impl<'a, K, W> Edge<'a, K, W> {
     pub fn new(from: &'a K, to: &'a K, weight: &'a W) -> Self {
         Edge { from, to, weight }
+    }
+}
+
+pub struct DfsIter<'a, K, T, W> {
+    map: &'a HashMap<K, Node<K, T, W>>,
+    stack: Vec<&'a Node<K, T, W>>,
+    visited: HashSet<&'a K>,
+}
+
+impl<'a, K, T, W> DfsIter<'a, K, T, W>
+where
+    K: Hash + Eq + Clone,
+{
+    /// # Panics
+    /// if graph doesn't contain `start_node`.
+    pub fn new(map: &'a HashMap<K, Node<K, T, W>>, start_node_key: &'a K) -> Self {
+        let mut visited = HashSet::new();
+        visited.insert(start_node_key);
+        let start_node = map.get(start_node_key).unwrap();
+        let mut stack = Vec::new();
+        stack.push(start_node);
+
+        Self {
+            map,
+            stack,
+            visited,
+        }
+    }
+}
+
+impl<'a, K, T, W> Iterator for DfsIter<'a, K, T, W>
+where
+    K: Eq + Hash + Eq + Clone,
+{
+    type Item = &'a Node<K, T, W>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let current_node = self.stack.pop()?;
+        for (neighbour_key, _) in current_node.neighbors() {
+            if !self.visited.contains(neighbour_key) {
+                let neighbour_node = self.map.get(neighbour_key).unwrap();
+                self.stack.push(neighbour_node);
+                self.visited.insert(neighbour_key);
+            }
+        }
+        Some(current_node)
+    }
+}
+
+pub struct BfsIter<'a, K, T, W> {
+    map: &'a HashMap<K, Node<K, T, W>>,
+    queue: VecDeque<&'a Node<K, T, W>>,
+    visited: HashSet<&'a K>,
+}
+
+impl<'a, K, T, W> BfsIter<'a, K, T, W>
+where
+    K: Hash + Eq + Clone,
+{
+    /// # Panics
+    /// if graph doesn't contain `start_node`.
+    pub fn new(map: &'a HashMap<K, Node<K, T, W>>, start_node_key: &'a K) -> Self {
+        let mut visited = HashSet::new();
+        visited.insert(start_node_key);
+        let start_node = map.get(start_node_key).unwrap();
+        let mut queue = VecDeque::new();
+        queue.push_back(start_node);
+
+        Self {
+            map,
+            queue,
+            visited,
+        }
+    }
+}
+
+impl<'a, K, T, W> Iterator for BfsIter<'a, K, T, W>
+where
+    K: Eq + Hash + Eq + Clone,
+{
+    type Item = &'a Node<K, T, W>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let current_node = self.queue.pop_front()?;
+        for (neighbour_key, _) in current_node.neighbors() {
+            if !self.visited.contains(neighbour_key) {
+                let neighbour_node = self.map.get(neighbour_key).unwrap();
+                self.queue.push_back(neighbour_node);
+                self.visited.insert(neighbour_key);
+            }
+        }
+        Some(current_node)
     }
 }
 
@@ -344,18 +498,18 @@ where
     W: Debug,
 {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
-        writeln!(f, "Graph {{");
-        writeln!(f, "    nodes: [");
+        writeln!(f, "Graph {{")?;
+        writeln!(f, "    nodes: [")?;
         for (k, v) in self.iter() {
-            writeln!(f, "        {{ key: {:?}, val: {:?} }},", k, v.val);
+            writeln!(f, "        {{ key: {:?}, val: {:?} }},", k, v.val)?;
         }
-        writeln!(f, "    ]");
-        writeln!(f, "\n    edges: [");
+        writeln!(f, "    ]")?;
+        writeln!(f, "\n    edges: [")?;
         for i in self.edges().iter() {
-            writeln!(f, "        {:?},", i);
+            writeln!(f, "        {:?},", i)?;
         }
-        writeln!(f, "    ]");
-        writeln!(f, "}}");
+        writeln!(f, "    ]")?;
+        writeln!(f, "}}")?;
         Ok(())
     }
 }

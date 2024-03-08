@@ -1,4 +1,6 @@
-use ds_rs::PerfRelative;
+use std::time::Instant;
+
+use ds_rs::{graph::{self, Graph}, PerfRelative};
 
 #[allow(dead_code)]
 fn perf_test() {
@@ -76,4 +78,30 @@ fn perf_test() {
 }
 
 fn main() {
+    let mut g = Graph::<char, u8, usize>::new();
+    g.insert(graph::Node::new('A', 0));
+    g.insert(graph::Node::new('B', 0));
+    g.insert(graph::Node::new('C', 0));
+    g.insert(graph::Node::new('D', 0));
+    g.insert(graph::Node::new('F', 0));
+    g.insert(graph::Node::new('G', 0));
+    g.insert(graph::Node::new('H', 0));
+
+    g.insert_edge('A', 'B', 4).unwrap();
+    g.insert_edge('A', 'C', 4).unwrap();
+    g.insert_edge('C', 'F', 2).unwrap();
+    g.insert_edge('C', 'B', 3).unwrap();
+    g.insert_edge('B', 'C', 5).unwrap();
+    g.insert_edge('B', 'D', 7).unwrap();
+    g.insert_edge('D', 'H', 6).unwrap();
+    g.insert_edge('D', 'G', 3).unwrap();
+    g.insert_edge('F', 'D', 1).unwrap();
+    g.insert_edge('F', 'H', 7).unwrap();
+    g.insert_edge('G', 'H', 1).unwrap();
+
+    let inst = Instant::now();
+    dbg!(g.dijkstra_shortest_path(&'A', &'H'));
+    dbg!(inst.elapsed());
+
 }
+
