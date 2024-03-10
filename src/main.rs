@@ -1,10 +1,10 @@
-use std::time::Instant;
+use std::{thread::Builder, time::Instant};
 
 use ds_rs::{
-    graph::{self, Graph},
-    matrix::MatrixVec,
+    matrix::Matrix,
     PerfRelative,
 };
+use rand::Rng;
 
 #[allow(dead_code)]
 fn perf_test() {
@@ -82,34 +82,38 @@ fn perf_test() {
 }
 
 fn main() {
-    let mut g = Graph::<char, u8, usize>::new();
-    g.insert(graph::Node::new('A', 0));
-    g.insert(graph::Node::new('B', 0));
-    g.insert(graph::Node::new('C', 0));
-    g.insert(graph::Node::new('D', 0));
-    g.insert(graph::Node::new('F', 0));
-    g.insert(graph::Node::new('G', 0));
-    g.insert(graph::Node::new('H', 0));
+    let mut rng = rand::thread_rng();
 
-    g.insert_edge('A', 'B', 4).unwrap();
-    g.insert_edge('A', 'C', 4).unwrap();
-    g.insert_edge('C', 'F', 2).unwrap();
-    g.insert_edge('C', 'B', 3).unwrap();
-    g.insert_edge('B', 'C', 5).unwrap();
-    g.insert_edge('B', 'D', 7).unwrap();
-    g.insert_edge('D', 'H', 6).unwrap();
-    g.insert_edge('D', 'G', 3).unwrap();
-    g.insert_edge('F', 'D', 1).unwrap();
-    g.insert_edge('F', 'H', 7).unwrap();
-    g.insert_edge('G', 'H', 1).unwrap();
+    const N: usize = 1024;
+    const _BYTES: usize = 4 * 8 * N * N * 2;
+    const FLOP: f32 = (N * N * 2 * N) as f32;
 
-    let inst = Instant::now();
-    let res = g.dijkstra_shortest_path(&'A', &'H');
-    dbg!(inst.elapsed());
-    dbg!(res);
+    let v1 = (0..N)
+        .map(|_| (0..N).map(|_| rng.gen::<f32>()).collect::<Vec<f32>>())
+        .collect::<Vec<Vec<f32>>>();
 
-    let m1: MatrixVec<usize> = MatrixVec::from([[1, 2], [4, 5], [7, 8]]);
-    let m2: MatrixVec<usize> = MatrixVec::from([[1, 2, 3, 0], [4, 5, 6, 7]]);
+    let v2 = (0..N)
+        .map(|_| (0..N).map(|_| rng.gen::<f32>()).collect::<Vec<f32>>())
+        .collect::<Vec<Vec<f32>>>();
 
-    dbg!(m1.mult(&m2));
+    Builder::new()
+        .stack_size(1_500_000_000)
+        .spawn(move || {
+            let a1 = Matrix::<f32, N, N>::from(v1);
+            let a2 = Matrix::<f32, N, N>::from(v2);
+
+            println!("filled");
+
+            let inst = Instant::now();
+            let a3 = a1.mult_transpose(&a2);
+            let elpsd = inst.elapsed();
+
+            println!("{:?}", elpsd);
+            println!("{:?}", a3.get(0, 0));
+            println!("{:?}", a3.get(1023, 1023));
+            println!("GFLOP/S: {}", (FLOP / elpsd.as_secs_f32()) / 1e9);
+        })
+        .unwrap()
+        .join()
+        .unwrap();
 }
