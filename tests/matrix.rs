@@ -9,6 +9,7 @@ fn test_matrix_mult() {
 
     let m3 = m1.mult_slow(&m2);
     let m4 = m1.mult_transpose(&m2);
+    let m5 = m1.mult_par_transpose(&m2);
 
     assert_eq!(
         m3,
@@ -16,6 +17,10 @@ fn test_matrix_mult() {
     );
     assert_eq!(
         m4,
+        Matrix::new([[30, 36, 42], [66, 81, 96], [102, 126, 150]])
+    );
+    assert_eq!(
+        m5,
         Matrix::new([[30, 36, 42], [66, 81, 96], [102, 126, 150]])
     );
 }

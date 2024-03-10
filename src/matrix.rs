@@ -2,6 +2,8 @@
 
 use std::ops::{AddAssign, Mul};
 
+use rayon::prelude::*;
+
 ////////////////////////////////////////////////////////////////////////////////
 /// Matrix
 ////////////////////////////////////////////////////////////////////////////////
@@ -43,6 +45,15 @@ where
         }
         Matrix { arr: new_arr }
     }
+
+    #[inline]
+    fn at_mut(&mut self, row: usize, col: usize) -> &mut T {
+        unsafe { self.arr.get_unchecked_mut(row).get_unchecked_mut(col) }
+    }
+    #[inline]
+    fn at(&self, row: usize, col: usize) -> &T {
+        unsafe { self.arr.get_unchecked(row).get_unchecked(col) }
+    }
 }
 
 impl<T, const M: usize, const N: usize> From<&Vec<Vec<T>>> for Matrix<T, M, N>
@@ -83,11 +94,64 @@ where
             for j in 0..P {
                 let mut sum = T::default();
                 for k in 0..N {
-                    sum += self.arr[i][k] * transposed.arr[j][k];
+                    sum += *self.at(i, k) * *transposed.at(j, k);
                 }
-                arr[i][j] = sum;
+                unsafe {
+                    *arr.get_unchecked_mut(i).get_unchecked_mut(j) = sum;
+                }
             }
         }
+
+        Matrix { arr }
+    }
+}
+
+impl<T, const M: usize, const N: usize> Matrix<T, M, N>
+where
+    T: Default + Copy + Mul + AddAssign<<T as Mul>::Output> + Sync + Send,
+{
+    pub fn transpose_par(&self) -> Matrix<T, N, M> {
+        let mut new_arr = [[T::default(); M]; N];
+
+        new_arr.par_iter_mut().enumerate().for_each(|(i, row)| {
+            for j in 0..M {
+                row[j] = self.arr[j][i];
+            }
+        });
+
+        Matrix { arr: new_arr }
+    }
+
+    pub fn transpose_in_place(&mut self) {
+        for i in 0..N {
+            for j in (i + 1)..M {
+                unsafe {
+                    let temp = std::ptr::read(&self.arr[i][j]);
+                    std::ptr::write(&mut self.arr[i][j], self.arr[j][i]);
+                    std::ptr::write(&mut self.arr[j][i], temp);
+                }
+            }
+        }
+    }
+
+    pub fn mult_par_transpose<const P: usize>(
+        &self,
+        other: &Matrix<T, N, P>,
+    ) -> Matrix<T, M, P> {
+        let mut arr = [[T::default(); P]; M];
+        let transposed = other.transpose();
+
+        arr.par_iter_mut().enumerate().for_each(|(i, row)| {
+            for j in 0..P {
+                let mut sum = T::default();
+                for k in 0..M {
+                    sum += *self.at(i, k) * *transposed.at(j, k);
+                }
+                unsafe {
+                    *row.get_unchecked_mut(j) = sum;
+                }
+            }
+        });
 
         Matrix { arr }
     }
@@ -153,6 +217,7 @@ where
             return self.vec.get_unchecked(i * self.col_len + j);
         }
     }
+    #[inline]
     fn at_mut(&mut self, i: usize, j: usize) -> &mut T {
         unsafe {
             return self.vec.get_unchecked_mut(i * self.col_len + j);
