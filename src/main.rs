@@ -1,10 +1,18 @@
 use std::{thread::Builder, time::Instant};
 
 use ds_rs::{
+    bigint,
     matrix::{Matrix, MatrixVec},
     PerfRelative,
 };
 use rand::Rng;
+
+use bigint::BigInt;
+
+fn main() {
+    let x = bigint!(23423294238403284284732498734987234987888888888888888888888888888888888888888888888888888888871);
+    dbg!(x);
+}
 
 #[allow(dead_code)]
 fn linked_list() {
@@ -128,7 +136,7 @@ fn matrix_mult() {
         .unwrap();
 }
 
-fn main() {
+fn matrix_add() {
     let mut rng = rand::thread_rng();
     const N: usize = 1024;
     let v1 = (0..N)

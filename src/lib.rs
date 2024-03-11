@@ -7,6 +7,7 @@ pub mod linked_list;
 pub mod queue;
 pub mod graph;
 pub mod matrix;
+pub mod bigint;
 
 pub enum DurationType {
     Nano,
