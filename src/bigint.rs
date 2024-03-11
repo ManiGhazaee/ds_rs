@@ -1,6 +1,9 @@
 #![allow(dead_code)]
 
-use std::{cmp::Ordering, ops::{Add, Sub}};
+use std::{
+    cmp::Ordering,
+    ops::{Add, Sub},
+};
 
 #[derive(Debug)]
 pub struct BigInt {
@@ -17,26 +20,37 @@ impl BigInt {
     }
 }
 
+impl BigInt {
+    pub fn zero() -> Self {
+        Self {
+            digits: vec![0],
+            positive: true,
+        }
+    }
+}
+
 impl From<&'static str> for BigInt {
     fn from(value: &'static str) -> Self {
-        let mut bytes: Vec<u8> = value.into();
+        let bytes: Vec<u8> = value.into();
         let positive = bytes[0] != b'-';
 
+        let mut res = Vec::new();
+
         bytes
-            .iter_mut()
+            .iter()
             .skip(if positive { 0 } else { 1 })
             .for_each(|i| {
                 let n = *i;
                 if n == b'_' {
                     return;
                 }
-                *i = n - b'0';
+                res.push(n - b'0');
             });
 
-        bytes.reverse();
+        res.reverse();
 
         Self {
-            digits: bytes,
+            digits: res,
             positive,
         }
     }
@@ -57,14 +71,49 @@ impl Sub for BigInt {
     }
 }
 
+impl AsRef<BigInt> for BigInt {
+    fn as_ref(&self) -> &BigInt {
+        self
+    }
+}
+
+impl Add for &BigInt {
+    type Output = BigInt;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        match (self.positive, rhs.positive) {
+            (true, true) => BigInt::new(_add(&self.digits, &rhs.digits), true),
+            (true, false) => match _cmp(&self.digits, &rhs.digits) {
+                Ordering::Less => BigInt::new(_sub(&rhs.digits, &self.digits), false),
+                Ordering::Equal => BigInt::zero(),
+                Ordering::Greater => BigInt::new(_sub(&self.digits, &rhs.digits), true),
+            },
+            (false, true) => match _cmp(&self.digits, &rhs.digits) {
+                Ordering::Less => BigInt::new(_sub(&rhs.digits, &self.digits), true),
+                Ordering::Equal => BigInt::zero(),
+                Ordering::Greater => BigInt::new(_sub(&self.digits, &rhs.digits), false),
+            },
+            (false, false) => BigInt::new(_add(&self.digits, &rhs.digits), false),
+        }
+    }
+}
+
 impl Add for BigInt {
     type Output = BigInt;
 
     fn add(self, rhs: Self) -> Self::Output {
         match (self.positive, rhs.positive) {
             (true, true) => BigInt::new(_add(&self.digits, &rhs.digits), true),
-            (true, false) => todo!(),
-            (false, true) => todo!(),
+            (true, false) => match _cmp(&self.digits, &rhs.digits) {
+                Ordering::Less => BigInt::new(_sub(&rhs.digits, &self.digits), false),
+                Ordering::Equal => BigInt::zero(),
+                Ordering::Greater => BigInt::new(_sub(&self.digits, &rhs.digits), true),
+            },
+            (false, true) => match _cmp(&self.digits, &rhs.digits) {
+                Ordering::Less => BigInt::new(_sub(&rhs.digits, &self.digits), true),
+                Ordering::Equal => BigInt::zero(),
+                Ordering::Greater => BigInt::new(_sub(&self.digits, &rhs.digits), false),
+            },
             (false, false) => BigInt::new(_add(&self.digits, &rhs.digits), false),
         }
     }
@@ -102,7 +151,7 @@ fn _cmp(lhs: &[u8], rhs: &[u8]) -> Ordering {
         return Ordering::Less;
     }
 
-    for i in lhs.iter().zip(rhs.iter()) {
+    for i in lhs.iter().zip(rhs.iter()).rev() {
         if i.0 > i.1 {
             return Ordering::Greater;
         } else if i.0 < i.1 {
@@ -145,6 +194,7 @@ fn _add(lhs: &[u8], rhs: &[u8]) -> Vec<u8> {
             res.push(a);
             carry = 0;
         }
+        i += 1;
     }
 
     if carry != 0 {
@@ -152,4 +202,61 @@ fn _add(lhs: &[u8], rhs: &[u8]) -> Vec<u8> {
     }
 
     res
+}
+
+fn _sub(lhs: &[u8], rhs: &[u8]) -> Vec<u8> {
+    let min = rhs.len();
+    let max = lhs.len();
+    let mut res: Vec<u8> = Vec::with_capacity(max);
+
+    lhs[min..max].iter().rev().for_each(|i| res.push(*i));
+
+    let mut i = min - 1;
+    loop {
+        let l_i = unsafe { *lhs.get_unchecked(i) };
+        let r_i = unsafe { *rhs.get_unchecked(i) };
+        if l_i < r_i {
+            res.push(10 + l_i - r_i);
+            let mut j = res.len() - 2;
+            loop {
+                unsafe {
+                    if *res.get_unchecked(j) == 0 {
+                        *res.get_unchecked_mut(j) = 9;
+                    } else {
+                        *res.get_unchecked_mut(j) -= 1;
+                        break;
+                    }
+                }
+                j -= 1;
+            }
+        } else {
+            res.push(l_i - r_i);
+        }
+
+        if i == 0 {
+            break;
+        }
+        i -= 1;
+    }
+
+    res.reverse();
+    // trim_end_zeros(&mut res);
+
+    res
+}
+
+fn trim_end_zeros(slice: &mut Vec<u8>) {
+    let mut i = slice.len() - 1;
+    loop {
+        unsafe {
+            if *slice.get_unchecked(i) != 0 {
+                slice.truncate(i + 1);
+            }
+        }
+        if i == 0 {
+            slice.truncate(1);
+            return;
+        }
+        i -= 1;
+    }
 }

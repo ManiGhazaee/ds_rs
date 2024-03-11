@@ -7,11 +7,7 @@ use ds_rs::{
 };
 use rand::Rng;
 
-use bigint::BigInt;
-
 fn main() {
-    let x = bigint!(23423294238403284284732498734987234987888888888888888888888888888888888888888888888888888888871);
-    dbg!(x);
 }
 
 #[allow(dead_code)]
