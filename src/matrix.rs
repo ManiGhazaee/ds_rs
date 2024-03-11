@@ -115,7 +115,9 @@ where
 
         new_arr.par_iter_mut().enumerate().for_each(|(i, row)| {
             for j in 0..M {
-                row[j] = self.arr[j][i];
+                unsafe {
+                    *row.get_unchecked_mut(j) = *self.at(j, i);
+                }
             }
         });
 
@@ -134,10 +136,7 @@ where
         }
     }
 
-    pub fn mult_par_transpose<const P: usize>(
-        &self,
-        other: &Matrix<T, N, P>,
-    ) -> Matrix<T, M, P> {
+    pub fn mult_par_transpose<const P: usize>(&self, other: &Matrix<T, N, P>) -> Matrix<T, M, P> {
         let mut arr = [[T::default(); P]; M];
         let transposed = other.transpose();
 
@@ -267,6 +266,69 @@ where
         }
 
         matrix
+    }
+}
+
+impl<T> MatrixVec<T>
+where
+    T: Default + Copy + Mul + AddAssign<<T as Mul>::Output> + Sync + Send,
+{
+    pub fn transpose_par(&self) -> MatrixVec<T> {
+        let mut new_vec = vec![T::default(); self.col_len * self.row_len];
+
+        new_vec
+            .par_chunks_exact_mut(self.row_len)
+            .enumerate()
+            .for_each(|(i, row)| {
+                for j in 0..self.col_len {
+                    unsafe {
+                        *row.get_unchecked_mut(j) = *self.at(j, i);
+                    }
+                }
+            });
+
+        MatrixVec {
+            vec: new_vec,
+            row_len: self.col_len,
+            col_len: self.row_len,
+        }
+    }
+
+    pub fn transpose_in_place(&mut self) {
+        for i in 0..self.row_len {
+            for j in (i + 1)..self.col_len {
+                unsafe {
+                    let temp = std::ptr::read(&*self.at(i, j));
+                    std::ptr::write(&mut *self.at_mut(i, j), *self.at(j, i));
+                    std::ptr::write(&mut *self.at_mut(j, i), temp);
+                }
+            }
+        }
+    }
+
+    pub fn mult_par_transpose(&self, other: &MatrixVec<T>) -> MatrixVec<T> {
+        let mut vec = vec![T::default(); other.row_len * self.col_len];
+        let transposed = other.transpose();
+
+        vec.par_chunks_exact_mut(transposed.row_len)
+            .enumerate()
+            .for_each(|(i, row)| {
+                for j in 0..other.col_len {
+                    let mut sum = T::default();
+                    for k in 0..self.col_len {
+                        sum += *self.at(i, k) * *transposed.at(j, k);
+                    }
+                    unsafe {
+                        *row.get_unchecked_mut(j) = sum;
+                    }
+                }
+            });
+
+        MatrixVec {
+            vec,
+            col_len: self.col_len,
+            row_len: other.row_len,
+        }
     }
 }
 
