@@ -1,6 +1,9 @@
 #![allow(dead_code)]
 
-use std::ops::{AddAssign, Mul};
+use std::{
+    fmt::Debug,
+    ops::{Add, AddAssign, Mul},
+};
 
 use rayon::prelude::*;
 
@@ -17,6 +20,8 @@ where
     T: Default + Copy,
 {
     pub const fn new(arr: [[T; N]; M]) -> Self {
+        assert!(N > 0);
+        assert!(M > 0);
         Self { arr }
     }
 
@@ -61,6 +66,8 @@ where
     T: Default + Copy,
 {
     fn from(value: &Vec<Vec<T>>) -> Self {
+        assert!(M > 0);
+        assert!(N > 0);
         let arr = [[Default::default(); N]; M];
         Matrix {
             arr: fill(value, arr),
@@ -103,6 +110,58 @@ where
         }
 
         Matrix { arr }
+    }
+}
+
+impl<T, const M: usize, const N: usize> Matrix<T, M, N>
+where
+    T: Copy + Add<Output = T> + Default,
+{
+    pub fn add(&self, other: &Self) -> Self {
+        let mut arr = [[T::default(); N]; M];
+        self.arr
+            .iter()
+            .zip(other.arr.iter())
+            .enumerate()
+            .for_each(|(i, rows)| {
+                rows.0
+                    .iter()
+                    .zip(rows.1.iter())
+                    .enumerate()
+                    .for_each(|(j, t)| unsafe {
+                        *arr.get_unchecked_mut(i).get_unchecked_mut(j) = *t.0 + *t.1
+                    })
+            });
+
+        Self { arr }
+    }
+}
+
+impl<T, const M: usize, const N: usize> Matrix<T, M, N>
+where
+    T: Copy + Add<Output = T> + Default + Send + Sync + Debug,
+{
+    pub fn add_par(&self, other: &Self) -> Self {
+        // let mut arr = [[T::default(); N]; M];
+
+        let arr = self
+            .arr
+            .par_iter()
+            .zip(other.arr.par_iter())
+            .map(|rows| {
+                rows.0
+                    .par_iter()
+                    .zip(rows.1.par_iter())
+                    .map(|t| *t.0 + *t.1)
+                    .collect::<Vec<T>>()
+                    .try_into()
+                    .unwrap()
+            })
+            .collect::<Vec<[T; N]>>()
+            .try_into()
+            .unwrap();
+
+        Self { arr }
     }
 }
 
@@ -159,9 +218,13 @@ where
     T: Default + Copy,
 {
     pub fn new(vec: Vec<Vec<T>>) -> Self {
+        let m = vec.len();
+        let n = vec[0].len();
+        assert!(m > 0);
+        assert!(n > 0);
         Self {
-            col_len: vec.len(),
-            row_len: vec[0].len(),
+            col_len: m,
+            row_len: n,
             vec: vec.into_iter().flatten().collect(),
         }
     }
@@ -326,6 +389,8 @@ where
 
 impl<T, const M: usize, const N: usize> From<[[T; N]; M]> for MatrixVec<T> {
     fn from(value: [[T; N]; M]) -> Self {
+        assert!(M > 0);
+        assert!(N > 0);
         let vec: Vec<T> = value.into_iter().flat_map(|i| i.into_iter()).collect();
         Self {
             col_len: M,
@@ -339,6 +404,8 @@ fn fill<T: Copy, const M: usize, const N: usize>(
     vec: &[Vec<T>],
     mut arr: [[T; N]; M],
 ) -> [[T; N]; M] {
+    assert!(M > 0);
+    assert!(N > 0);
     for (i, v) in vec.into_iter().enumerate() {
         for (j, f) in v.into_iter().enumerate() {
             unsafe {
@@ -348,3 +415,15 @@ fn fill<T: Copy, const M: usize, const N: usize>(
     }
     arr
 }
+
+// unsafe fn set_2darray_with_ptr<T: Copy>(
+//     arr_ptr: *mut T,
+//     arr_len: usize,
+//     i: usize,
+//     j: usize,
+//     new_val: T,
+// ) {
+//     let offset = i * arr_len + j;
+//     let target_ptr = arr_ptr.offset(offset as isize);
+//     *target_ptr = new_val;
+// }

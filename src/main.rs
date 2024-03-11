@@ -7,7 +7,7 @@ use ds_rs::{
 use rand::Rng;
 
 #[allow(dead_code)]
-fn perf_test() {
+fn linked_list() {
     let mut l1 = ds_rs::linked_list::LinkedList::new();
     let mut l2 = std::collections::linked_list::LinkedList::new();
     let perf = PerfRelative::new("ds_rs", "std");
@@ -81,7 +81,8 @@ fn perf_test() {
     );
 }
 
-fn main() {
+#[allow(dead_code)]
+fn matrix_mult() {
     let mut rng = rand::thread_rng();
 
     const N: usize = 1024;
@@ -121,6 +122,32 @@ fn main() {
             println!("{}", av3.get(1023, 1023).unwrap());
             println!("Matrix    GFLOP/S: {}", (FLOP / elpsd1.as_secs_f32()) / 1e9);
             println!("MatrixVec GFLOP/S: {}", (FLOP / elpsd2.as_secs_f32()) / 1e9);
+        })
+        .unwrap()
+        .join()
+        .unwrap();
+}
+
+fn main() {
+    let mut rng = rand::thread_rng();
+    const N: usize = 1024;
+    let v1 = (0..N)
+        .map(|_| (0..N).map(|_| rng.gen::<f32>()).collect::<Vec<f32>>())
+        .collect::<Vec<Vec<f32>>>();
+    let v2 = (0..N)
+        .map(|_| (0..N).map(|_| rng.gen::<f32>()).collect::<Vec<f32>>())
+        .collect::<Vec<Vec<f32>>>();
+    Builder::new()
+        .stack_size(1_500_000_000)
+        .spawn(move || {
+            let perf = PerfRelative::new("add", "add_par");
+            let m1 = Matrix::<f32, N, N>::from(&v1);
+            let m2 = Matrix::<f32, N, N>::from(&v2);
+
+            let mut x = Matrix::<f32, N, N>::from(&vec![vec![0.0; N]; N]);
+            let mut y = Matrix::<f32, N, N>::from(&vec![vec![0.0; N]; N]);
+
+            perf.test("x", 1, || x = m1.add(&m2), || y = m1.add_par(&m2));
         })
         .unwrap()
         .join()
