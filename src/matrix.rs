@@ -124,21 +124,9 @@ where
         Matrix { arr: new_arr }
     }
 
-    pub fn transpose_in_place(&mut self) {
-        for i in 0..N {
-            for j in (i + 1)..M {
-                unsafe {
-                    let temp = std::ptr::read(&self.arr[i][j]);
-                    std::ptr::write(&mut self.arr[i][j], self.arr[j][i]);
-                    std::ptr::write(&mut self.arr[j][i], temp);
-                }
-            }
-        }
-    }
-
     pub fn mult_par_transpose<const P: usize>(&self, other: &Matrix<T, N, P>) -> Matrix<T, M, P> {
         let mut arr = [[T::default(); P]; M];
-        let transposed = other.transpose();
+        let transposed = other.transpose_par();
 
         arr.par_iter_mut().enumerate().for_each(|(i, row)| {
             for j in 0..P {
@@ -210,6 +198,18 @@ where
         new_matrix
     }
 
+    pub fn transpose_in_place(&mut self) {
+        for i in 0..self.row_len {
+            for j in (i + 1)..self.col_len {
+                unsafe {
+                    let temp = std::ptr::read(&*self.at(i, j));
+                    std::ptr::write(&mut *self.at_mut(i, j), *self.at(j, i));
+                    std::ptr::write(&mut *self.at_mut(j, i), temp);
+                }
+            }
+        }
+    }
+
     #[inline]
     fn at(&self, i: usize, j: usize) -> &T {
         unsafe {
@@ -276,16 +276,18 @@ where
     pub fn transpose_par(&self) -> MatrixVec<T> {
         let mut new_vec = vec![T::default(); self.col_len * self.row_len];
 
-        new_vec
-            .par_chunks_exact_mut(self.row_len)
-            .enumerate()
-            .for_each(|(i, row)| {
-                for j in 0..self.col_len {
-                    unsafe {
-                        *row.get_unchecked_mut(j) = *self.at(j, i);
+        if self.row_len != 0 {
+            new_vec
+                .par_chunks_exact_mut(self.row_len)
+                .enumerate()
+                .for_each(|(i, row)| {
+                    for j in 0..self.col_len {
+                        unsafe {
+                            *row.get_unchecked_mut(j) = *self.at(j, i);
+                        }
                     }
-                }
-            });
+                });
+        }
 
         MatrixVec {
             vec: new_vec,
@@ -294,35 +296,25 @@ where
         }
     }
 
-    pub fn transpose_in_place(&mut self) {
-        for i in 0..self.row_len {
-            for j in (i + 1)..self.col_len {
-                unsafe {
-                    let temp = std::ptr::read(&*self.at(i, j));
-                    std::ptr::write(&mut *self.at_mut(i, j), *self.at(j, i));
-                    std::ptr::write(&mut *self.at_mut(j, i), temp);
-                }
-            }
-        }
-    }
-
     pub fn mult_par_transpose(&self, other: &MatrixVec<T>) -> MatrixVec<T> {
         let mut vec = vec![T::default(); other.row_len * self.col_len];
-        let transposed = other.transpose();
+        let transposed = other.transpose_par();
 
-        vec.par_chunks_exact_mut(transposed.row_len)
-            .enumerate()
-            .for_each(|(i, row)| {
-                for j in 0..other.col_len {
-                    let mut sum = T::default();
-                    for k in 0..self.col_len {
-                        sum += *self.at(i, k) * *transposed.at(j, k);
+        if transposed.row_len != 0 {
+            vec.par_chunks_exact_mut(transposed.row_len)
+                .enumerate()
+                .for_each(|(i, row)| {
+                    for j in 0..other.col_len {
+                        let mut sum = T::default();
+                        for k in 0..self.col_len {
+                            sum += *self.at(i, k) * *transposed.at(j, k);
+                        }
+                        unsafe {
+                            *row.get_unchecked_mut(j) = sum;
+                        }
                     }
-                    unsafe {
-                        *row.get_unchecked_mut(j) = sum;
-                    }
-                }
-            });
+                });
+        }
 
         MatrixVec {
             vec,

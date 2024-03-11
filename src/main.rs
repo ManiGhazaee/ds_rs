@@ -1,7 +1,7 @@
 use std::{thread::Builder, time::Instant};
 
 use ds_rs::{
-    matrix::Matrix,
+    matrix::{Matrix, MatrixVec},
     PerfRelative,
 };
 use rand::Rng;
@@ -102,8 +102,8 @@ fn main() {
             let a1 = Matrix::<f32, N, N>::from(&v1);
             let a2 = Matrix::<f32, N, N>::from(&v2);
 
-            // let av1 = MatrixVec::new(v1);
-            // let av2 = MatrixVec::new(v2);
+            let av1 = MatrixVec::new(v1);
+            let av2 = MatrixVec::new(v2);
 
             println!("filled");
 
@@ -111,16 +111,16 @@ fn main() {
             let a3 = a1.mult_par_transpose(&a2);
             let elpsd1 = inst.elapsed();
 
-            // let inst = Instant::now();
-            // let av3 = av1.mult_transpose(&av2);
-            // let elpsd2 = inst.elapsed();
+            let inst = Instant::now();
+            let av3 = av1.mult_transpose(&av2);
+            let elpsd2 = inst.elapsed();
 
             println!("{}", a3.get(0, 0).unwrap());
             println!("{}", a3.get(1023, 1023).unwrap());
-            // println!("{}", av3.get(0, 0).unwrap());
-            // println!("{}", av3.get(1023, 1023).unwrap());
+            println!("{}", av3.get(0, 0).unwrap());
+            println!("{}", av3.get(1023, 1023).unwrap());
             println!("Matrix    GFLOP/S: {}", (FLOP / elpsd1.as_secs_f32()) / 1e9);
-            // println!("MatrixVec GFLOP/S: {}", (FLOP / elpsd2.as_secs_f32()) / 1e9);
+            println!("MatrixVec GFLOP/S: {}", (FLOP / elpsd2.as_secs_f32()) / 1e9);
         })
         .unwrap()
         .join()
