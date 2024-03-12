@@ -67,7 +67,41 @@ impl Sub for BigInt {
     type Output = BigInt;
 
     fn sub(self, rhs: Self) -> Self::Output {
-        todo!()
+        match (self.positive, rhs.positive) {
+            (true, true) => match _cmp(&self.digits, &rhs.digits) {
+                Ordering::Less => BigInt::new(_sub(&rhs.digits, &self.digits), false),
+                Ordering::Equal => BigInt::zero(),
+                Ordering::Greater => BigInt::new(_sub(&self.digits, &rhs.digits), true),
+            },
+            (true, false) => BigInt::new(_add(&self.digits, &rhs.digits), true),
+            (false, true) => BigInt::new(_add(&self.digits, &rhs.digits), false),
+            (false, false) => match _cmp(&self.digits, &rhs.digits) {
+                Ordering::Less => BigInt::new(_sub(&rhs.digits, &self.digits), true),
+                Ordering::Equal => BigInt::zero(),
+                Ordering::Greater => BigInt::new(_sub(&self.digits, &rhs.digits), false),
+            },
+        }
+    }
+}
+
+impl Sub for &BigInt {
+    type Output = BigInt;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        match (self.positive, rhs.positive) {
+            (true, true) => match _cmp(&self.digits, &rhs.digits) {
+                Ordering::Less => BigInt::new(_sub(&rhs.digits, &self.digits), false),
+                Ordering::Equal => BigInt::zero(),
+                Ordering::Greater => BigInt::new(_sub(&self.digits, &rhs.digits), true),
+            },
+            (true, false) => BigInt::new(_add(&self.digits, &rhs.digits), true),
+            (false, true) => BigInt::new(_add(&self.digits, &rhs.digits), false),
+            (false, false) => match _cmp(&self.digits, &rhs.digits) {
+                Ordering::Less => BigInt::new(_sub(&rhs.digits, &self.digits), true),
+                Ordering::Equal => BigInt::zero(),
+                Ordering::Greater => BigInt::new(_sub(&self.digits, &rhs.digits), false),
+            },
+        }
     }
 }
 

@@ -20,4 +20,12 @@ fn test_add() {
     assert_eq!(&small + &nbig, bigint!(-9790976));
     assert_eq!(&small + &nmid, bigint!(-220397));
     assert_eq!(&small + &nsmall, bigint!(0));
+
+    assert_eq!(&big - &big, bigint!(0));
+    assert_eq!(&big - &nbig, bigint!(19601998));
+    assert_eq!(&big - &mid, bigint!(9570579));
+    assert_eq!(&big - &nmid, bigint!(10031419));
+    assert_eq!(&small - &nbig, bigint!(9811022));
+    assert_eq!(&small - &nmid, bigint!(240443));
+    assert_eq!(&small - &nsmall, bigint!(20046));
 }
