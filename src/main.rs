@@ -1,7 +1,7 @@
 use std::{thread::Builder, time::Instant};
 
 use ds_rs::{
-    bigint,
+    bigint::_mul,
     matrix::{Matrix, MatrixVec},
     PerfRelative,
 };

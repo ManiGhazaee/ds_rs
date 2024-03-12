@@ -2,7 +2,7 @@
 
 use std::{
     cmp::Ordering,
-    ops::{Add, Sub},
+    ops::{Add, Mul, Sub},
 };
 
 #[derive(Debug)]
@@ -153,6 +153,32 @@ impl Add for BigInt {
     }
 }
 
+impl Mul for BigInt {
+    type Output = BigInt;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        match (self.positive, rhs.positive) {
+            (true, true) => BigInt::new(_mul(&self.digits, &rhs.digits), true),
+            (true, false) => BigInt::new(_mul(&self.digits, &rhs.digits), false),
+            (false, true) => BigInt::new(_mul(&self.digits, &rhs.digits), false),
+            (false, false) => BigInt::new(_mul(&self.digits, &rhs.digits), true),
+        }
+    }
+}
+
+impl Mul for &BigInt {
+    type Output = BigInt;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        match (self.positive, rhs.positive) {
+            (true, true) => BigInt::new(_mul(&self.digits, &rhs.digits), true),
+            (true, false) => BigInt::new(_mul(&self.digits, &rhs.digits), false),
+            (false, true) => BigInt::new(_mul(&self.digits, &rhs.digits), false),
+            (false, false) => BigInt::new(_mul(&self.digits, &rhs.digits), true),
+        }
+    }
+}
+
 impl PartialOrd for BigInt {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
@@ -274,13 +300,16 @@ fn _sub(lhs: &[u8], rhs: &[u8]) -> Vec<u8> {
     }
 
     res.reverse();
-    // trim_end_zeros(&mut res);
+    trim_end_zeros(&mut res);
 
     res
 }
 
 fn trim_end_zeros(slice: &mut Vec<u8>) {
     let mut i = slice.len() - 1;
+    if unsafe { *slice.get_unchecked(i) != 0 } {
+        return;
+    }
     loop {
         unsafe {
             if *slice.get_unchecked(i) != 0 {
@@ -293,4 +322,49 @@ fn trim_end_zeros(slice: &mut Vec<u8>) {
         }
         i -= 1;
     }
+}
+
+pub fn _mul(lhs: &[u8], rhs: &[u8]) -> Vec<u8> {
+    let (min, max, min_ref, max_ref) = if lhs.len() > rhs.len() {
+        (rhs.len(), lhs.len(), rhs, lhs)
+    } else {
+        (lhs.len(), rhs.len(), lhs, rhs)
+    };
+
+    let mut carry = 0;
+    let mut temp: Vec<u8> = Vec::with_capacity(max);
+    let mut res: Vec<u8> = Vec::with_capacity(max);
+
+    let mut i = 0;
+    while i < min {
+        (0..i).for_each(|_| temp.push(0));
+
+        let mut j = 0;
+        while j < max {
+            let a = unsafe { max_ref.get_unchecked(j) * min_ref.get_unchecked(i) + carry };
+            if a > 9 {
+                temp.push(a % 10);
+                carry = a / 10;
+            } else {
+                temp.push(a);
+                carry = 0;
+            }
+            j += 1;
+        }
+        if carry != 0 {
+            let digits = to_digits(carry);
+            digits.into_iter().rev().for_each(|i| temp.push(i));
+            carry = 0;
+        }
+        res = _add(&res, &temp);
+        temp.clear();
+
+        i += 1;
+    }
+
+    res
+}
+
+fn to_digits(v: u8) -> Vec<u8> {
+    v.to_string().bytes().map(|b| b - b'0').collect()
 }
