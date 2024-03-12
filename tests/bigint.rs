@@ -67,3 +67,21 @@ fn test_fact() {
     assert_eq!(bigint!(20).fact(), bigint!(2432902008176640000));
     assert_eq!(bigint!(100).fact(), bigint!(93326215443944152681699238856266700490715968264381621468592963895217599993229915608941463976156518286253697920827223758251185210916864000000000000000000000000))
 }
+
+#[test]
+fn test_try_into() {
+    assert_eq!(
+        TryInto::<isize>::try_into(bigint!(123456789)).unwrap(),
+        123456789isize
+    );
+    assert_eq!(
+        TryInto::<isize>::try_into(bigint!(-123456789)).unwrap(),
+        -123456789isize
+    );
+}
+
+#[test]
+#[should_panic]
+fn test_try_into_panic() {
+    let _ = TryInto::<isize>::try_into(bigint!(123456789123456789123456789)).unwrap();
+}

@@ -1,7 +1,6 @@
-#![allow(dead_code)]
-
 use std::{
     cmp::Ordering,
+    num::ParseIntError,
     ops::{Add, Mul, MulAssign, Sub},
 };
 
@@ -71,30 +70,37 @@ impl BigInt {
     pub fn incrument(self) -> Self {
         self + Self::one()
     }
+
+    pub fn get_digit(&self, index: usize) -> Option<&u8> {
+        self.digits.get(index)
+    }
+
+    pub fn get_digit_mut(&mut self, index: usize) -> Option<&mut u8> {
+        self.digits.get_mut(index)
+    }
+
+    pub fn digit_count(&self) -> usize {
+        self.digits.len()
+    }
 }
 
 impl From<&'static str> for BigInt {
     fn from(value: &'static str) -> Self {
-        let bytes: Vec<u8> = value.into();
+        let mut bytes: Vec<u8> = value.into();
+        bytes.retain(|i| *i <= b'9' && *i >= b'0' || *i == b'-');
+
         let positive = bytes[0] != b'-';
 
-        let mut res = Vec::new();
-
-        bytes
+        bytes = bytes
             .iter()
             .skip(if positive { 0 } else { 1 })
-            .for_each(|i| {
-                let n = *i;
-                if n == b'_' {
-                    return;
-                }
-                res.push(n - b'0');
-            });
+            .map(|i| *i - b'0')
+            .collect();
 
-        res.reverse();
+        bytes.reverse();
 
         Self {
-            digits: res,
+            digits: bytes,
             positive,
         }
     }
@@ -263,6 +269,23 @@ impl Clone for BigInt {
     }
 }
 
+impl TryInto<isize> for BigInt {
+    type Error = ParseIntError;
+
+    fn try_into(self) -> Result<isize, Self::Error> {
+        let mut x = self.digits;
+        x.iter_mut().for_each(|i| *i = *i + b'0');
+        if !self.positive {
+            x.push(b'-');
+        }
+        x.reverse();
+        let s = String::from_utf8(x).unwrap();
+
+        let n = s.parse::<isize>()?;
+        Ok(n)
+    }
+}
+
 fn _cmp(lhs: &[u8], rhs: &[u8]) -> Ordering {
     if lhs.len() > rhs.len() {
         return Ordering::Greater;
@@ -411,8 +434,7 @@ fn _mul(lhs: &[u8], rhs: &[u8]) -> Vec<u8> {
             j += 1;
         }
         if carry != 0 {
-            let digits = to_digits(carry);
-            digits.into_iter().rev().for_each(|i| temp.push(i));
+            temp.push(carry);
             carry = 0;
         }
         res = _add(&res, &temp);
@@ -422,8 +444,4 @@ fn _mul(lhs: &[u8], rhs: &[u8]) -> Vec<u8> {
     }
 
     res
-}
-
-fn to_digits(v: u8) -> Vec<u8> {
-    v.to_string().bytes().map(|b| b - b'0').collect()
 }
