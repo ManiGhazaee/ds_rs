@@ -2,7 +2,7 @@
 
 use std::{
     cmp::Ordering,
-    ops::{Add, Mul, Sub},
+    ops::{Add, Mul, MulAssign, Sub},
 };
 
 #[derive(Debug)]
@@ -26,6 +26,50 @@ impl BigInt {
             digits: vec![0],
             positive: true,
         }
+    }
+
+    pub fn one() -> Self {
+        Self {
+            digits: vec![1],
+            positive: true,
+        }
+    }
+
+    pub fn neg_one() -> Self {
+        Self {
+            digits: vec![1],
+            positive: false,
+        }
+    }
+
+    pub fn pow(self, exp: usize) -> Self {
+        let mut res = BigInt::one();
+        for _ in 0..exp {
+            res *= self.clone();
+        }
+
+        res
+    }
+
+    pub fn fact(self) -> Self {
+        assert!(self >= Self::zero());
+        if self == Self::zero() {
+            return Self::one();
+        }
+
+        let mut i = Self::one();
+        let mut res = Self::one();
+        loop {
+            res *= i.clone();
+            if i == self {
+                break res;
+            }
+            i = i.incrument();
+        }
+    }
+
+    pub fn incrument(self) -> Self {
+        self + Self::one()
     }
 }
 
@@ -179,6 +223,12 @@ impl Mul for &BigInt {
     }
 }
 
+impl MulAssign for BigInt {
+    fn mul_assign(&mut self, rhs: Self) {
+        *self = self.clone().mul(rhs);
+    }
+}
+
 impl PartialOrd for BigInt {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
@@ -203,6 +253,15 @@ impl Ord for BigInt {
 }
 
 impl Eq for BigInt {}
+
+impl Clone for BigInt {
+    fn clone(&self) -> Self {
+        Self {
+            digits: self.digits.clone(),
+            positive: self.positive.clone(),
+        }
+    }
+}
 
 fn _cmp(lhs: &[u8], rhs: &[u8]) -> Ordering {
     if lhs.len() > rhs.len() {
@@ -324,7 +383,7 @@ fn trim_end_zeros(slice: &mut Vec<u8>) {
     }
 }
 
-pub fn _mul(lhs: &[u8], rhs: &[u8]) -> Vec<u8> {
+fn _mul(lhs: &[u8], rhs: &[u8]) -> Vec<u8> {
     let (min, max, min_ref, max_ref) = if lhs.len() > rhs.len() {
         (rhs.len(), lhs.len(), rhs, lhs)
     } else {
