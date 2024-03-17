@@ -1,7 +1,12 @@
 #![cfg(test)]
 
+use std::env;
+
 use ds_rs::bigint;
+use ds_rs::bigint::div_by_three;
+use ds_rs::bigint::div_by_two;
 use ds_rs::bigint::BigInt;
+use rand::Rng;
 
 #[test]
 fn test_add() {
@@ -43,6 +48,7 @@ fn test_sub() {
 
 #[test]
 fn test_mul() {
+    env::set_var("RUST_BACKTRACE", "1");
     let big = bigint!(9_800_999);
     let mid = bigint!(230_420);
     let small = bigint!(10_023);
@@ -84,4 +90,34 @@ fn test_try_into() {
 #[should_panic]
 fn test_try_into_panic() {
     let _ = TryInto::<isize>::try_into(bigint!(123456789123456789123456789)).unwrap();
+}
+
+#[test]
+fn test_div_by_two_random() {
+    let mut rng = rand::thread_rng();
+    for _ in 0..1000 {
+        let x: usize = rng.gen();
+        let e = x / 2;
+        let be = BigInt::from(e);
+        let expected = be.digits();
+        let b = BigInt::from(x);
+        let b = b.digits();
+        let res = div_by_two(b);
+        assert_eq!(res, expected.to_owned());
+    }
+}
+
+#[test]
+fn test_div_by_three_random() {
+    let mut rng = rand::thread_rng();
+    for _ in 0..1000 {
+        let x: usize = rng.gen();
+        let e = x / 3;
+        let be = BigInt::from(e);
+        let expected = be.digits();
+        let b = BigInt::from(x);
+        let b = b.digits();
+        let res = div_by_three(b);
+        assert_eq!(res, expected.to_owned());
+    }
 }
