@@ -121,3 +121,48 @@ fn test_div_by_three_random() {
         assert_eq!(res, expected.to_owned());
     }
 }
+
+#[test]
+fn test_mul_random() {
+    let mut rng = rand::thread_rng();
+    for _ in 0..1000 {
+        let x: i32 = rng.gen();
+        let y: i32 = rng.gen();
+        let e = x as i64 * y as i64;
+        let e = BigInt::from(e);
+        let x = BigInt::from(x as i64);
+        let y = BigInt::from(y as i64);
+        let res = x * y;
+        assert_eq!(res, e);
+    }
+}
+
+#[test]
+fn test_add_random() {
+    let mut rng = rand::thread_rng();
+    for _ in 0..1000 {
+        let x: i32 = rng.gen();
+        let y: i32 = rng.gen();
+        let e = x as i64 + y as i64;
+        let e = BigInt::from(e);
+        let x = BigInt::from(x);
+        let y = BigInt::from(y);
+        let res = x + y;
+        assert_eq!(res, e);
+    }
+}
+
+#[test]
+fn test_sub_random() {
+    let mut rng = rand::thread_rng();
+    for _ in 0..1000 {
+        let x: i32 = rng.gen();
+        let y: i32 = rng.gen();
+        let e = x as i64 - y as i64;
+        let e = BigInt::from(e);
+        let x = BigInt::from(x);
+        let y = BigInt::from(y);
+        let res = x - y;
+        assert_eq!(res, e);
+    }
+}

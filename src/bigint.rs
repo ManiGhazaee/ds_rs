@@ -112,348 +112,6 @@ impl BigInt {
     }
 }
 
-impl From<&'static str> for BigInt {
-    fn from(value: &'static str) -> Self {
-        let mut bytes: Vec<u8> = value.into();
-        bytes.retain(|i| *i <= b'9' && *i >= b'0' || *i == b'-');
-
-        let positive = bytes[0] != b'-';
-
-        bytes = bytes
-            .iter()
-            .skip(if positive { 0 } else { 1 })
-            .map(|i| *i - b'0')
-            .collect();
-
-        bytes.reverse();
-
-        Self {
-            digits: bytes,
-            positive,
-        }
-    }
-}
-
-impl Shl<usize> for BigInt {
-    type Output = BigInt;
-
-    fn shl(mut self, rhs: usize) -> Self::Output {
-        for _ in 0..rhs {
-            self.digits.push(0);
-        }
-        self
-    }
-}
-
-impl Shl<usize> for &BigInt {
-    type Output = BigInt;
-
-    fn shl(self, rhs: usize) -> Self::Output {
-        let mut x = self.clone();
-        for _ in 0..rhs {
-            x.digits.push(0);
-        }
-        x
-    }
-}
-
-impl Shr<usize> for BigInt {
-    type Output = BigInt;
-
-    fn shr(mut self, rhs: usize) -> Self::Output {
-        for _ in 0..rhs {
-            self.digits.insert(0, 0);
-        }
-        self
-    }
-}
-
-impl Shr<usize> for &BigInt {
-    type Output = BigInt;
-
-    fn shr(self, rhs: usize) -> Self::Output {
-        let mut x = self.clone();
-        for _ in 0..rhs {
-            x.digits.insert(0, 0);
-        }
-        x
-    }
-}
-
-impl From<usize> for BigInt {
-    fn from(value: usize) -> Self {
-        let mut bytes: Vec<u8> = value.to_string().into();
-        bytes.retain(|i| *i <= b'9' && *i >= b'0' || *i == b'-');
-
-        let positive = bytes[0] != b'-';
-
-        bytes = bytes
-            .iter()
-            .skip(if positive { 0 } else { 1 })
-            .map(|i| *i - b'0')
-            .collect();
-
-        bytes.reverse();
-
-        Self {
-            digits: bytes,
-            positive,
-        }
-    }
-}
-
-#[macro_export]
-macro_rules! bigint {
-    ($num:literal) => {
-        BigInt::from(stringify!($num))
-    };
-}
-
-impl Sub for BigInt {
-    type Output = BigInt;
-
-    fn sub(self, rhs: Self) -> Self::Output {
-        match (self.positive, rhs.positive) {
-            (true, true) => match _cmp(&self.digits, &rhs.digits) {
-                Ordering::Less => BigInt::new(sub(&rhs.digits, &self.digits), false),
-                Ordering::Equal => BigInt::zero(),
-                Ordering::Greater => BigInt::new(sub(&self.digits, &rhs.digits), true),
-            },
-            (true, false) => BigInt::new(add(&self.digits, &rhs.digits), true),
-            (false, true) => BigInt::new(add(&self.digits, &rhs.digits), false),
-            (false, false) => match _cmp(&self.digits, &rhs.digits) {
-                Ordering::Less => BigInt::new(sub(&rhs.digits, &self.digits), true),
-                Ordering::Equal => BigInt::zero(),
-                Ordering::Greater => BigInt::new(sub(&self.digits, &rhs.digits), false),
-            },
-        }
-    }
-}
-
-impl Sub for &BigInt {
-    type Output = BigInt;
-
-    fn sub(self, rhs: Self) -> Self::Output {
-        match (self.positive, rhs.positive) {
-            (true, true) => match _cmp(&self.digits, &rhs.digits) {
-                Ordering::Less => BigInt::new(sub(&rhs.digits, &self.digits), false),
-                Ordering::Equal => BigInt::zero(),
-                Ordering::Greater => BigInt::new(sub(&self.digits, &rhs.digits), true),
-            },
-            (true, false) => BigInt::new(add(&self.digits, &rhs.digits), true),
-            (false, true) => BigInt::new(add(&self.digits, &rhs.digits), false),
-            (false, false) => match _cmp(&self.digits, &rhs.digits) {
-                Ordering::Less => BigInt::new(sub(&rhs.digits, &self.digits), true),
-                Ordering::Equal => BigInt::zero(),
-                Ordering::Greater => BigInt::new(sub(&self.digits, &rhs.digits), false),
-            },
-        }
-    }
-}
-
-impl AsRef<BigInt> for BigInt {
-    fn as_ref(&self) -> &BigInt {
-        self
-    }
-}
-
-impl Add for &BigInt {
-    type Output = BigInt;
-
-    fn add(self, rhs: Self) -> Self::Output {
-        match (self.positive, rhs.positive) {
-            (true, true) => BigInt::new(add(&self.digits, &rhs.digits), true),
-            (true, false) => match _cmp(&self.digits, &rhs.digits) {
-                Ordering::Less => BigInt::new(sub(&rhs.digits, &self.digits), false),
-                Ordering::Equal => BigInt::zero(),
-                Ordering::Greater => BigInt::new(sub(&self.digits, &rhs.digits), true),
-            },
-            (false, true) => match _cmp(&self.digits, &rhs.digits) {
-                Ordering::Less => BigInt::new(sub(&rhs.digits, &self.digits), true),
-                Ordering::Equal => BigInt::zero(),
-                Ordering::Greater => BigInt::new(sub(&self.digits, &rhs.digits), false),
-            },
-            (false, false) => BigInt::new(add(&self.digits, &rhs.digits), false),
-        }
-    }
-}
-
-impl Add for BigInt {
-    type Output = BigInt;
-
-    fn add(self, rhs: Self) -> Self::Output {
-        match (self.positive, rhs.positive) {
-            (true, true) => BigInt::new(add(&self.digits, &rhs.digits), true),
-            (true, false) => match _cmp(&self.digits, &rhs.digits) {
-                Ordering::Less => BigInt::new(sub(&rhs.digits, &self.digits), false),
-                Ordering::Equal => BigInt::zero(),
-                Ordering::Greater => BigInt::new(sub(&self.digits, &rhs.digits), true),
-            },
-            (false, true) => match _cmp(&self.digits, &rhs.digits) {
-                Ordering::Less => BigInt::new(sub(&rhs.digits, &self.digits), true),
-                Ordering::Equal => BigInt::zero(),
-                Ordering::Greater => BigInt::new(sub(&self.digits, &rhs.digits), false),
-            },
-            (false, false) => BigInt::new(add(&self.digits, &rhs.digits), false),
-        }
-    }
-}
-
-impl Add<BigInt> for &mut BigInt {
-    type Output = BigInt;
-
-    fn add(self, rhs: BigInt) -> Self::Output {
-        match (self.positive, rhs.positive) {
-            (true, true) => BigInt::new(add(&self.digits, &rhs.digits), true),
-            (true, false) => match _cmp(&self.digits, &rhs.digits) {
-                Ordering::Less => BigInt::new(sub(&rhs.digits, &self.digits), false),
-                Ordering::Equal => BigInt::zero(),
-                Ordering::Greater => BigInt::new(sub(&self.digits, &rhs.digits), true),
-            },
-            (false, true) => match _cmp(&self.digits, &rhs.digits) {
-                Ordering::Less => BigInt::new(sub(&rhs.digits, &self.digits), true),
-                Ordering::Equal => BigInt::zero(),
-                Ordering::Greater => BigInt::new(sub(&self.digits, &rhs.digits), false),
-            },
-            (false, false) => BigInt::new(add(&self.digits, &rhs.digits), false),
-        }
-    }
-}
-
-impl Add<&BigInt> for &mut BigInt {
-    type Output = BigInt;
-
-    fn add(self, rhs: &BigInt) -> Self::Output {
-        match (self.positive, rhs.positive) {
-            (true, true) => BigInt::new(add(&self.digits, &rhs.digits), true),
-            (true, false) => match _cmp(&self.digits, &rhs.digits) {
-                Ordering::Less => BigInt::new(sub(&rhs.digits, &self.digits), false),
-                Ordering::Equal => BigInt::zero(),
-                Ordering::Greater => BigInt::new(sub(&self.digits, &rhs.digits), true),
-            },
-            (false, true) => match _cmp(&self.digits, &rhs.digits) {
-                Ordering::Less => BigInt::new(sub(&rhs.digits, &self.digits), true),
-                Ordering::Equal => BigInt::zero(),
-                Ordering::Greater => BigInt::new(sub(&self.digits, &rhs.digits), false),
-            },
-            (false, false) => BigInt::new(add(&self.digits, &rhs.digits), false),
-        }
-    }
-}
-
-impl AddAssign for BigInt {
-    fn add_assign(&mut self, rhs: Self) {
-        *self = self.add(rhs);
-    }
-}
-
-impl AddAssign<&BigInt> for BigInt {
-    fn add_assign(&mut self, rhs: &Self) {
-        *self = self.add(rhs);
-    }
-}
-
-impl Mul for BigInt {
-    type Output = BigInt;
-
-    fn mul(self, rhs: Self) -> Self::Output {
-        let mul = mul(&self.digits, &rhs.digits);
-        match (self.positive, rhs.positive) {
-            (true, true) => BigInt::new(mul, true),
-            (true, false) => BigInt::new(mul, false),
-            (false, true) => BigInt::new(mul, false),
-            (false, false) => BigInt::new(mul, true),
-        }
-    }
-}
-
-impl Mul for &BigInt {
-    type Output = BigInt;
-
-    fn mul(self, rhs: Self) -> Self::Output {
-        let mul = mul(&self.digits, &rhs.digits);
-        match (self.positive, rhs.positive) {
-            (true, true) => BigInt::new(mul, true),
-            (true, false) => BigInt::new(mul, false),
-            (false, true) => BigInt::new(mul, false),
-            (false, false) => BigInt::new(mul, true),
-        }
-    }
-}
-
-impl MulAssign for BigInt {
-    fn mul_assign(&mut self, rhs: Self) {
-        *self = self.clone().mul(rhs);
-    }
-}
-
-impl Div for BigInt {
-    type Output = BigInt;
-
-    fn div(self, rhs: Self) -> Self::Output {
-        todo!()
-    }
-}
-
-impl Div for &BigInt {
-    type Output = BigInt;
-
-    fn div(self, rhs: Self) -> Self::Output {
-        todo!()
-    }
-}
-
-impl PartialOrd for BigInt {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl PartialEq for BigInt {
-    fn eq(&self, other: &Self) -> bool {
-        self.digits == other.digits && self.positive == other.positive
-    }
-}
-
-impl Ord for BigInt {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        match (self.positive, other.positive) {
-            (true, true) => _cmp(&self.digits, &other.digits),
-            (true, false) => Ordering::Greater,
-            (false, true) => Ordering::Less,
-            (false, false) => _cmp(&other.digits, &self.digits),
-        }
-    }
-}
-
-impl Eq for BigInt {}
-
-impl Clone for BigInt {
-    fn clone(&self) -> Self {
-        Self {
-            digits: self.digits.clone(),
-            positive: self.positive.clone(),
-        }
-    }
-}
-
-impl TryInto<isize> for BigInt {
-    type Error = ParseIntError;
-
-    fn try_into(self) -> Result<isize, Self::Error> {
-        let mut x = self.digits;
-        x.iter_mut().for_each(|i| *i = *i + b'0');
-        if !self.positive {
-            x.push(b'-');
-        }
-        x.reverse();
-        let s = String::from_utf8(x).unwrap();
-
-        let n = s.parse::<isize>()?;
-        Ok(n)
-    }
-}
-
 fn _cmp(lhs: &[u8], rhs: &[u8]) -> Ordering {
     let lcmp = _len_cmp(lhs, rhs);
     let Ordering::Equal = lcmp else {
@@ -692,7 +350,7 @@ fn mul(lhs: &[u8], rhs: &[u8]) -> Vec<u8> {
         (&[], _) => return vec![0],
         (_, &[]) => return vec![0],
         (x, y) => {
-            return if cmp::min(x.len(), y.len()) > 4 {
+            return if cmp::min(x.len(), y.len()) > 32 {
                 _mul_t3(x, y).digits
             } else {
                 _mul(x, y)
@@ -772,3 +430,408 @@ pub fn div_by_three(num: &[u8]) -> Vec<u8> {
 
     result
 }
+
+impl From<&'static str> for BigInt {
+    fn from(value: &'static str) -> Self {
+        let mut bytes: Vec<u8> = value.into();
+        bytes.retain(|i| *i <= b'9' && *i >= b'0' || *i == b'-');
+
+        let positive = bytes[0] != b'-';
+
+        bytes = bytes
+            .iter()
+            .skip(if positive { 0 } else { 1 })
+            .map(|i| *i - b'0')
+            .collect();
+
+        bytes.reverse();
+
+        Self {
+            digits: bytes,
+            positive,
+        }
+    }
+}
+
+macro_rules! impl_from_int {
+    ($($t:ty)+) => ($(
+        impl From<$t> for BigInt {
+            fn from(value: $t) -> Self {
+                let mut bytes: Vec<u8> = value.to_string().into();
+                bytes.retain(|i| *i <= b'9' && *i >= b'0' || *i == b'-');
+
+                let positive = bytes[0] != b'-';
+
+                bytes = bytes
+                    .iter()
+                    .skip(if positive { 0 } else { 1 })
+                    .map(|i| *i - b'0')
+                    .collect();
+
+                bytes.reverse();
+
+                Self {
+                    digits: bytes,
+                    positive,
+                }
+            }
+        }
+    )+)
+}
+
+impl_from_int! { usize u8 u16 u32 u64 u128 isize i8 i16 i32 i64 i128 }
+
+macro_rules! impl_shl {
+    ($($t:ty)+) => ($(
+        impl Shl<$t> for BigInt {
+            type Output = BigInt;
+
+            fn shl(mut self, rhs: $t) -> Self::Output {
+                for _ in 0..rhs {
+                    self.digits.push(0);
+                }
+                self
+            }
+        }
+    )+);
+}
+
+macro_rules! impl_shl_ref {
+    ($t1:ty, $t2:ty) => {
+        impl Shl<$t1> for $t2 {
+            type Output = BigInt;
+
+            fn shl(self, rhs: $t1) -> Self::Output {
+                let mut x = self.clone();
+                for _ in 0..rhs {
+                    x.digits.push(0);
+                }
+                x
+            }
+        }
+    };
+}
+
+impl_shl! { usize u8 u16 u32 u64 u128 isize i8 i16 i32 i64 i128 }
+impl_shl_ref!(usize, &BigInt);
+impl_shl_ref!(u8, &BigInt);
+impl_shl_ref!(u16, &BigInt);
+impl_shl_ref!(u32, &BigInt);
+impl_shl_ref!(u64, &BigInt);
+impl_shl_ref!(u128, &BigInt);
+impl_shl_ref!(isize, &BigInt);
+impl_shl_ref!(i8, &BigInt);
+impl_shl_ref!(i16, &BigInt);
+impl_shl_ref!(i32, &BigInt);
+impl_shl_ref!(i64, &BigInt);
+impl_shl_ref!(i128, &BigInt);
+impl_shl_ref!(usize, &mut BigInt);
+impl_shl_ref!(u8, &mut BigInt);
+impl_shl_ref!(u16, &mut BigInt);
+impl_shl_ref!(u32, &mut BigInt);
+impl_shl_ref!(u64, &mut BigInt);
+impl_shl_ref!(u128, &mut BigInt);
+impl_shl_ref!(isize, &mut BigInt);
+impl_shl_ref!(i8, &mut BigInt);
+impl_shl_ref!(i16, &mut BigInt);
+impl_shl_ref!(i32, &mut BigInt);
+impl_shl_ref!(i64, &mut BigInt);
+impl_shl_ref!(i128, &mut BigInt);
+
+macro_rules! impl_shr {
+    ($($t:ty)+) => ($(
+        impl Shr<$t> for BigInt {
+            type Output = BigInt;
+
+            fn shr(mut self, rhs: $t) -> Self::Output {
+                for _ in 0..rhs {
+                    self.digits.insert(0, 0);
+                }
+                self
+            }
+        }
+    )+);
+}
+
+macro_rules! impl_shr_ref {
+    ($t1:ty, $t2:ty) => {
+        impl Shr<$t1> for $t2 {
+            type Output = BigInt;
+
+            fn shr(self, rhs: $t1) -> Self::Output {
+                let mut x = self.clone();
+                for _ in 0..rhs {
+                    x.digits.insert(0, 0);
+                }
+                x
+            }
+        }
+    };
+}
+
+impl_shr! { usize u8 u16 u32 u64 u128 isize i8 i16 i32 i64 i128 }
+impl_shr_ref!(usize, &BigInt);
+impl_shr_ref!(u8, &BigInt);
+impl_shr_ref!(u16, &BigInt);
+impl_shr_ref!(u32, &BigInt);
+impl_shr_ref!(u64, &BigInt);
+impl_shr_ref!(u128, &BigInt);
+impl_shr_ref!(isize, &BigInt);
+impl_shr_ref!(i8, &BigInt);
+impl_shr_ref!(i16, &BigInt);
+impl_shr_ref!(i32, &BigInt);
+impl_shr_ref!(i64, &BigInt);
+impl_shr_ref!(i128, &BigInt);
+impl_shr_ref!(usize, &mut BigInt);
+impl_shr_ref!(u8, &mut BigInt);
+impl_shr_ref!(u16, &mut BigInt);
+impl_shr_ref!(u32, &mut BigInt);
+impl_shr_ref!(u64, &mut BigInt);
+impl_shr_ref!(u128, &mut BigInt);
+impl_shr_ref!(isize, &mut BigInt);
+impl_shr_ref!(i8, &mut BigInt);
+impl_shr_ref!(i16, &mut BigInt);
+impl_shr_ref!(i32, &mut BigInt);
+impl_shr_ref!(i64, &mut BigInt);
+impl_shr_ref!(i128, &mut BigInt);
+
+#[macro_export]
+macro_rules! bigint {
+    ($num:literal) => {
+        BigInt::from(stringify!($num))
+    };
+}
+
+macro_rules! impl_sub {
+    ($t1:ty, $t2:ty) => {
+        impl Sub<$t1> for $t2 {
+            type Output = BigInt;
+
+            fn sub(self, rhs: $t1) -> Self::Output {
+                match (self.positive, rhs.positive) {
+                    (true, true) => match _cmp(&self.digits, &rhs.digits) {
+                        Ordering::Less => BigInt::new(sub(&rhs.digits, &self.digits), false),
+                        Ordering::Equal => BigInt::zero(),
+                        Ordering::Greater => BigInt::new(sub(&self.digits, &rhs.digits), true),
+                    },
+                    (true, false) => BigInt::new(add(&self.digits, &rhs.digits), true),
+                    (false, true) => BigInt::new(add(&self.digits, &rhs.digits), false),
+                    (false, false) => match _cmp(&self.digits, &rhs.digits) {
+                        Ordering::Less => BigInt::new(sub(&rhs.digits, &self.digits), true),
+                        Ordering::Equal => BigInt::zero(),
+                        Ordering::Greater => BigInt::new(sub(&self.digits, &rhs.digits), false),
+                    },
+                }
+            }
+        }
+    };
+}
+
+impl_sub!(BigInt, BigInt);
+impl_sub!(BigInt, &BigInt);
+impl_sub!(&BigInt, BigInt);
+impl_sub!(&BigInt, &BigInt);
+impl_sub!(&mut BigInt, BigInt);
+impl_sub!(BigInt, &mut BigInt);
+impl_sub!(&BigInt, &mut BigInt);
+impl_sub!(&mut BigInt, &BigInt);
+impl_sub!(&mut BigInt, &mut BigInt);
+
+impl AsRef<BigInt> for BigInt {
+    fn as_ref(&self) -> &BigInt {
+        self
+    }
+}
+
+macro_rules! impl_add {
+    ($t1:ty, $t2:ty) => {
+        impl Add<$t1> for $t2 {
+            type Output = BigInt;
+
+            fn add(self, rhs: $t1) -> Self::Output {
+                match (self.positive, rhs.positive) {
+                    (true, true) => BigInt::new(add(&self.digits, &rhs.digits), true),
+                    (true, false) => match _cmp(&self.digits, &rhs.digits) {
+                        Ordering::Less => BigInt::new(sub(&rhs.digits, &self.digits), false),
+                        Ordering::Equal => BigInt::zero(),
+                        Ordering::Greater => BigInt::new(sub(&self.digits, &rhs.digits), true),
+                    },
+                    (false, true) => match _cmp(&self.digits, &rhs.digits) {
+                        Ordering::Less => BigInt::new(sub(&rhs.digits, &self.digits), true),
+                        Ordering::Equal => BigInt::zero(),
+                        Ordering::Greater => BigInt::new(sub(&self.digits, &rhs.digits), false),
+                    },
+                    (false, false) => BigInt::new(add(&self.digits, &rhs.digits), false),
+                }
+            }
+        }
+    };
+}
+
+impl_add!(BigInt, BigInt);
+impl_add!(BigInt, &BigInt);
+impl_add!(&BigInt, BigInt);
+impl_add!(&BigInt, &BigInt);
+impl_add!(&mut BigInt, BigInt);
+impl_add!(BigInt, &mut BigInt);
+impl_add!(&BigInt, &mut BigInt);
+impl_add!(&mut BigInt, &BigInt);
+impl_add!(&mut BigInt, &mut BigInt);
+
+macro_rules! impl_add_assign {
+    ($t1:ty, $t2:ty) => {
+        impl AddAssign<$t1> for $t2 {
+            fn add_assign(&mut self, rhs: $t1) {
+                *self = self.add(rhs);
+            }
+        }
+    };
+}
+
+impl_add_assign!(BigInt, BigInt);
+impl_add_assign!(&BigInt, BigInt);
+impl_add_assign!(&mut BigInt, BigInt);
+
+macro_rules! impl_mul {
+    ($t1:ty, $t2:ty) => {
+        impl Mul<$t1> for $t2 {
+            type Output = BigInt;
+
+            fn mul(self, rhs: $t1) -> Self::Output {
+                let mul = mul(&self.digits, &rhs.digits);
+                match (self.positive, rhs.positive) {
+                    (true, true) => BigInt::new(mul, true),
+                    (true, false) => BigInt::new(mul, false),
+                    (false, true) => BigInt::new(mul, false),
+                    (false, false) => BigInt::new(mul, true),
+                }
+            }
+        }
+    };
+}
+
+impl_mul!(BigInt, BigInt);
+impl_mul!(BigInt, &BigInt);
+impl_mul!(&BigInt, BigInt);
+impl_mul!(&BigInt, &BigInt);
+impl_mul!(&mut BigInt, BigInt);
+impl_mul!(BigInt, &mut BigInt);
+impl_mul!(&BigInt, &mut BigInt);
+impl_mul!(&mut BigInt, &BigInt);
+impl_mul!(&mut BigInt, &mut BigInt);
+
+macro_rules! impl_mul_assign {
+    ($t1:ty, $t2:ty) => {
+        impl MulAssign<$t1> for $t2 {
+            fn mul_assign(&mut self, rhs: $t1) {
+                *self = self.clone().mul(rhs);
+            }
+        }
+    };
+}
+
+impl_mul_assign!(BigInt, BigInt);
+impl_mul_assign!(&BigInt, BigInt);
+impl_mul_assign!(&mut BigInt, BigInt);
+
+impl PartialOrd for BigInt {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl PartialEq for BigInt {
+    fn eq(&self, other: &Self) -> bool {
+        self.digits == other.digits && self.positive == other.positive
+    }
+}
+
+impl Ord for BigInt {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        match (self.positive, other.positive) {
+            (true, true) => _cmp(&self.digits, &other.digits),
+            (true, false) => Ordering::Greater,
+            (false, true) => Ordering::Less,
+            (false, false) => _cmp(&other.digits, &self.digits),
+        }
+    }
+}
+
+impl Eq for BigInt {}
+
+impl Clone for BigInt {
+    fn clone(&self) -> Self {
+        Self {
+            digits: self.digits.clone(),
+            positive: self.positive.clone(),
+        }
+    }
+}
+
+macro_rules! impl_try_into_int {
+    ($t1:ty, $t2:ty) => {
+        impl TryInto<$t1> for $t2 {
+            type Error = ParseIntError;
+
+            fn try_into(self) -> Result<$t1, Self::Error> {
+                let s = self.to_string();
+                let n = s.parse::<$t1>()?;
+                Ok(n)
+            }
+        }
+    };
+}
+
+impl_try_into_int!(usize, BigInt);
+impl_try_into_int!(u8, BigInt);
+impl_try_into_int!(u16, BigInt);
+impl_try_into_int!(u32, BigInt);
+impl_try_into_int!(u64, BigInt);
+impl_try_into_int!(u128, BigInt);
+impl_try_into_int!(isize, BigInt);
+impl_try_into_int!(i8, BigInt);
+impl_try_into_int!(i16, BigInt);
+impl_try_into_int!(i32, BigInt);
+impl_try_into_int!(i64, BigInt);
+impl_try_into_int!(i128, BigInt);
+impl_try_into_int!(usize, &BigInt);
+impl_try_into_int!(u8, &BigInt);
+impl_try_into_int!(u16, &BigInt);
+impl_try_into_int!(u32, &BigInt);
+impl_try_into_int!(u64, &BigInt);
+impl_try_into_int!(u128, &BigInt);
+impl_try_into_int!(isize, &BigInt);
+impl_try_into_int!(i8, &BigInt);
+impl_try_into_int!(i16, &BigInt);
+impl_try_into_int!(i32, &BigInt);
+impl_try_into_int!(i64, &BigInt);
+impl_try_into_int!(i128, &BigInt);
+impl_try_into_int!(usize, &mut BigInt);
+impl_try_into_int!(u8, &mut BigInt);
+impl_try_into_int!(u16, &mut BigInt);
+impl_try_into_int!(u32, &mut BigInt);
+impl_try_into_int!(u64, &mut BigInt);
+impl_try_into_int!(u128, &mut BigInt);
+impl_try_into_int!(isize, &mut BigInt);
+impl_try_into_int!(i8, &mut BigInt);
+impl_try_into_int!(i16, &mut BigInt);
+impl_try_into_int!(i32, &mut BigInt);
+impl_try_into_int!(i64, &mut BigInt);
+impl_try_into_int!(i128, &mut BigInt);
+
+macro_rules! impl_to_string {
+    ($($t:ty)+) => ($(
+        impl ToString for $t {
+            fn to_string(&self) -> String {
+                let mut x: Vec<u8> = self.digits.iter().map(|i| *i + b'0').collect();
+                if !self.positive {
+                    x.push(b'-');
+                }
+                x.reverse();
+                String::from_utf8(x).unwrap()
+            }
+        }
+    )+);
+}
+
+impl_to_string! { BigInt &BigInt &mut BigInt}

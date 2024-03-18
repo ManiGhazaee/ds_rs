@@ -8,8 +8,7 @@ use ds_rs::{
 };
 use rand::Rng;
 
-fn main() {
-}
+fn main() {}
 
 #[allow(dead_code)]
 fn linked_list() {
