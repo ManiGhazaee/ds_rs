@@ -1,7 +1,8 @@
+use rayon::prelude::*;
 use std::{
     cmp::{self, Ordering},
     num::ParseIntError,
-    ops::{Add, AddAssign, Div, Mul, MulAssign, Shl, Shr, Sub},
+    ops::{Add, AddAssign, Mul, MulAssign, Shl, Shr, Sub},
 };
 
 #[derive(Debug)]
@@ -142,6 +143,7 @@ fn _len_cmp(lhs: &[u8], rhs: &[u8]) -> Ordering {
 fn add(lhs: &[u8], rhs: &[u8]) -> Vec<u8> {
     match (lhs, rhs) {
         (&[], &[]) => vec![0],
+        (&[0], &[0]) => vec![0],
         (&[], _) => rhs.to_vec(),
         (_, &[]) => lhs.to_vec(),
         (x, y) => _add(x, y),
@@ -195,9 +197,9 @@ fn _add(lhs: &[u8], rhs: &[u8]) -> Vec<u8> {
 fn sub(lhs: &[u8], rhs: &[u8]) -> Vec<u8> {
     match (lhs, rhs) {
         (&[], &[]) => vec![0],
+        (&[0], &[0]) => vec![0],
         (&[], _) => rhs.to_vec(),
         (_, &[]) => lhs.to_vec(),
-        (&[0], &[0]) => vec![0],
         (x, y) => _sub(x, y),
     }
 }
@@ -263,7 +265,7 @@ fn trim_end_zeros(slice: &mut Vec<u8>) {
     }
 }
 
-fn _mul(lhs: &[u8], rhs: &[u8]) -> Vec<u8> {
+fn xx_mul(lhs: &[u8], rhs: &[u8]) -> Vec<u8> {
     let (min, max, min_ref, max_ref) = if lhs.len() > rhs.len() {
         (rhs.len(), lhs.len(), rhs, lhs)
     } else {
@@ -303,6 +305,90 @@ fn _mul(lhs: &[u8], rhs: &[u8]) -> Vec<u8> {
     trim_end_zeros(&mut res);
 
     res
+}
+
+fn x_mul(lhs: &[u8], rhs: &[u8]) -> Vec<u8> {
+    let (min, max, min_ref, max_ref) = if lhs.len() > rhs.len() {
+        (rhs.len(), lhs.len(), rhs, lhs)
+    } else {
+        (lhs.len(), rhs.len(), lhs, rhs)
+    };
+
+    let mut res: Vec<u8> = vec![0; max + min];
+
+    for i in 0..min {
+        let mut carry = 0;
+        let mut j = 0;
+        while j < max {
+            let a = unsafe { max_ref.get_unchecked(j) * min_ref.get_unchecked(i) + carry };
+            let sum = unsafe { *res.get_unchecked(i + j) } + a;
+            unsafe { *res.get_unchecked_mut(i + j) = sum % 10 };
+            carry = sum / 10;
+            j += 1;
+        }
+        let mut k = i + j;
+        while carry != 0 {
+            let sum = unsafe { *res.get_unchecked(k) } + carry;
+            unsafe { *res.get_unchecked_mut(k) = sum % 10 };
+            carry = sum / 10;
+            k += 1;
+        }
+    }
+
+    trim_end_zeros(&mut res);
+
+    res
+}
+
+fn y_mul(lhs: &[u8], rhs: &[u8]) -> Vec<u8> {
+    let (min_ref, max_ref) = if lhs.len() > rhs.len() {
+        (rhs, lhs)
+    } else {
+        (lhs, rhs)
+    };
+
+    let mut res = vec![0; lhs.len() + rhs.len()];
+
+    for (i, &digit_i) in min_ref.iter().enumerate() {
+        let mut carry = 0;
+        for (j, &digit_j) in max_ref.iter().enumerate() {
+            let index = i + j;
+            let product = unsafe { *res.get_unchecked(index) } + digit_i * digit_j + carry;
+            unsafe { *res.get_unchecked_mut(index) = product % 10 };
+            carry = product / 10;
+        }
+        let mut k = i + max_ref.len();
+        while carry != 0 {
+            let sum = unsafe { res.get_unchecked(k) } + carry;
+            unsafe { *res.get_unchecked_mut(k) = sum % 10 };
+            carry = sum / 10;
+            k += 1;
+        }
+    }
+
+    trim_end_zeros(&mut res);
+
+    res
+}
+
+fn _mul(lhs: &[u8], rhs: &[u8]) -> Vec<u8> {
+    let mut result = vec![0; lhs.len() + rhs.len()];
+
+    for (i, &digit1) in lhs.iter().enumerate() {
+        let mut carry = 0;
+        for (j, &digit2) in rhs.iter().enumerate() {
+            let product = digit1 * digit2 + unsafe { *result.get_unchecked(i + j) } + carry;
+            unsafe { *result.get_unchecked_mut(i + j) = product % 10 };
+            carry = (product / 10) as u8;
+        }
+        unsafe { *result.get_unchecked_mut(i + rhs.len()) = carry };
+    }
+
+    while let Some(&0) = result.last() {
+        result.pop();
+    }
+
+    result
 }
 
 fn _mul_t3(lhs: &[u8], rhs: &[u8]) -> BigInt {
@@ -346,9 +432,10 @@ fn _mul_t3(lhs: &[u8], rhs: &[u8]) -> BigInt {
 
 fn mul(lhs: &[u8], rhs: &[u8]) -> Vec<u8> {
     match (lhs, rhs) {
-        (&[], &[]) => return vec![0],
         (&[], _) => return vec![0],
         (_, &[]) => return vec![0],
+        (&[0], _) => return vec![0],
+        (_, &[0]) => return vec![0],
         (x, y) => {
             return if cmp::min(x.len(), y.len()) > 32 {
                 _mul_t3(x, y).digits
@@ -453,6 +540,23 @@ impl From<&'static str> for BigInt {
     }
 }
 
+pub trait ToBigInt {
+    fn to_bigint(&self) -> BigInt;
+}
+
+macro_rules! impl_to_bigint {
+    ($($t:ty)+) => ($(
+        impl ToBigInt for $t {
+            fn to_bigint(&self) -> BigInt {
+                BigInt::from(*self)
+            }
+        }
+    )+)
+}
+
+impl_to_bigint! { usize u8 u16 u32 u64 u128 isize i8 i16 i32 i64 i128 }
+impl_to_bigint! { &usize &u8 &u16 &u32 &u64 &u128 &isize &i8 &i16 &i32 &i64 &i128 }
+
 macro_rules! impl_from_int {
     ($($t:ty)+) => ($(
         impl From<$t> for BigInt {
@@ -480,6 +584,8 @@ macro_rules! impl_from_int {
 }
 
 impl_from_int! { usize u8 u16 u32 u64 u128 isize i8 i16 i32 i64 i128 }
+impl_from_int! { &usize &u8 &u16 &u32 &u64 &u128 &isize &i8 &i16 &i32 &i64 &i128 }
+impl_from_int! { &mut usize &mut u8 &mut u16 &mut u32 &mut u64 &mut u128 &mut isize &mut i8 &mut i16 &mut i32 &mut i64 &mut i128 }
 
 macro_rules! impl_shl {
     ($($t:ty)+) => ($(

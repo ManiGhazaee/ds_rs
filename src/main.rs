@@ -1,6 +1,6 @@
 use std::{thread::Builder, time::Instant};
 
-use ds_rs::bigint;
+use ds_rs::bigint::{self, ToBigInt};
 use ds_rs::bigint::BigInt;
 use ds_rs::{
     matrix::{Matrix, MatrixVec},
@@ -8,7 +8,12 @@ use ds_rs::{
 };
 use rand::Rng;
 
-fn main() {}
+fn main() {
+    let inst = Instant::now();
+    let x = 10000.to_bigint().fact();
+    dbg!(inst.elapsed());
+    dbg!(x.digit_count());
+}
 
 #[allow(dead_code)]
 fn linked_list() {
