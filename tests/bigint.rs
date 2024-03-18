@@ -74,23 +74,23 @@ fn test_fact() {
     assert_eq!(bigint!(100).fact(), bigint!(93326215443944152681699238856266700490715968264381621468592963895217599993229915608941463976156518286253697920827223758251185210916864000000000000000000000000))
 }
 
-// #[test]
-// fn test_try_into() {
-//     assert_eq!(
-//         TryInto::<isize>::try_into(bigint!(123456789)).unwrap(),
-//         123456789isize
-//     );
-//     assert_eq!(
-//         TryInto::<isize>::try_into(bigint!(-123456789)).unwrap(),
-//         -123456789isize
-//     );
-// }
+#[test]
+fn test_try_into() {
+    assert_eq!(
+        TryInto::<isize>::try_into(bigint!(123456789)).unwrap(),
+        123456789isize
+    );
+    assert_eq!(
+        TryInto::<isize>::try_into(bigint!(-123456789)).unwrap(),
+        -123456789isize
+    );
+}
 
-// #[test]
-// #[should_panic]
-// fn test_try_into_panic() {
-//     let _ = TryInto::<isize>::try_into(bigint!(123456789123456789123456789)).unwrap();
-// }
+#[test]
+#[should_panic]
+fn test_try_into_panic() {
+    let _ = TryInto::<isize>::try_into(bigint!(123456789123456789123456789)).unwrap();
+}
 
 // #[test]
 // fn test_div_by_two_random() {
@@ -165,4 +165,13 @@ fn test_sub_random() {
         let res = x - y;
         assert_eq!(res, e);
     }
+}
+
+#[test]
+fn test_to_string() {
+    let x =bigint!(93326215443944152681699238856266700490715968264381621468592963895217599993229915608941463976156518286253697920827223758251185210916864000000000000000000000000);
+
+    let e = "93326215443944152681699238856266700490715968264381621468592963895217599993229915608941463976156518286253697920827223758251185210916864000000000000000000000000".to_string();
+
+    assert_eq!(x.to_string(), e);
 }

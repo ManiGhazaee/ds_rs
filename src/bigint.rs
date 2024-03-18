@@ -1,16 +1,22 @@
+use core::num::ParseIntError;
 use std::{
     cmp::Ordering,
     ops::{Add, AddAssign, Mul, MulAssign, Shl, Shr, Sub},
 };
 
+type Digit = u64;
+type DoubleDigit = u128;
+const BASE: Digit = 1000000000000000000;
+const BASE_POW: usize = 18;
+
 #[derive(Debug)]
 pub struct BigInt {
-    digits: Vec<u64>,
+    digits: Vec<Digit>,
     positive: bool,
 }
 
 impl BigInt {
-    pub fn new(vec: Vec<u64>, positive: bool) -> Self {
+    pub fn new(vec: Vec<Digit>, positive: bool) -> Self {
         let mut vec = if vec.is_empty() { vec![0] } else { vec };
         trim_end_zeros(&mut vec);
         BigInt {
@@ -81,25 +87,25 @@ impl BigInt {
         }
     }
 
-    // pub fn to_usize(&self) -> Result<usize, ParseIntError> {
-    //     TryInto::<usize>::try_into(self)
-    // }
+    pub fn to_usize(&self) -> Result<usize, ParseIntError> {
+        TryInto::<usize>::try_into(self)
+    }
 
-    // pub fn get_digit(&self, index: usize) -> Option<&u8> {
-    //     self.digits.get(index)
-    // }
+    pub fn get_digit(&self, index: usize) -> Option<&Digit> {
+        self.digits.get(index)
+    }
 
-    // pub fn get_digit_mut(&mut self, index: usize) -> Option<&mut u8> {
-    //     self.digits.get_mut(index)
-    // }
+    pub fn get_digit_mut(&mut self, index: usize) -> Option<&mut Digit> {
+        self.digits.get_mut(index)
+    }
 
     pub fn digit_count(&self) -> usize {
         self.digits.len()
     }
 
-    // pub fn digits(&self) -> &Vec<u8> {
-    //     self.digits.as_ref()
-    // }
+    pub fn digits(&self) -> &Vec<Digit> {
+        self.digits.as_ref()
+    }
 
     // pub(super) fn div_by_three(&self) -> Self {
     //     BigInt::new(div_by_three(&self.digits), self.positive)
@@ -110,7 +116,7 @@ impl BigInt {
     // }
 }
 
-fn _cmp(lhs: &[u64], rhs: &[u64]) -> Ordering {
+fn _cmp(lhs: &[Digit], rhs: &[Digit]) -> Ordering {
     let lcmp = _len_cmp(lhs, rhs);
     let Ordering::Equal = lcmp else {
         return lcmp;
@@ -127,7 +133,7 @@ fn _cmp(lhs: &[u64], rhs: &[u64]) -> Ordering {
     Ordering::Equal
 }
 
-fn _len_cmp(lhs: &[u64], rhs: &[u64]) -> Ordering {
+fn _len_cmp(lhs: &[Digit], rhs: &[Digit]) -> Ordering {
     if lhs.len() > rhs.len() {
         Ordering::Greater
     } else if lhs.len() < rhs.len() {
@@ -137,7 +143,7 @@ fn _len_cmp(lhs: &[u64], rhs: &[u64]) -> Ordering {
     }
 }
 
-fn add(lhs: &[u64], rhs: &[u64]) -> Vec<u64> {
+fn add(lhs: &[Digit], rhs: &[Digit]) -> Vec<Digit> {
     match (lhs, rhs) {
         (&[], &[]) => vec![0],
         (&[0], &[0]) => vec![0],
@@ -147,7 +153,7 @@ fn add(lhs: &[u64], rhs: &[u64]) -> Vec<u64> {
     }
 }
 
-fn _add(lhs: &[u64], rhs: &[u64]) -> Vec<u64> {
+fn _add(lhs: &[Digit], rhs: &[Digit]) -> Vec<Digit> {
     let mut carry = 0;
     let mut i = 0;
     let (min, max, max_ref) = if lhs.len() > rhs.len() {
@@ -156,12 +162,12 @@ fn _add(lhs: &[u64], rhs: &[u64]) -> Vec<u64> {
         (lhs.len(), rhs.len(), rhs)
     };
 
-    let mut res: Vec<u64> = Vec::with_capacity(max + 1);
+    let mut res: Vec<Digit> = Vec::with_capacity(max + 1);
 
     while i < min {
         let a = unsafe { *lhs.get_unchecked(i) + *rhs.get_unchecked(i) + carry };
-        res.push(a % 1000000000000000000);
-        carry = a / 1000000000000000000;
+        res.push(a % BASE);
+        carry = a / BASE;
         i += 1;
     }
 
@@ -179,7 +185,7 @@ fn _add(lhs: &[u64], rhs: &[u64]) -> Vec<u64> {
     res
 }
 
-fn sub(lhs: &[u64], rhs: &[u64]) -> Vec<u64> {
+fn sub(lhs: &[Digit], rhs: &[Digit]) -> Vec<Digit> {
     match (lhs, rhs) {
         (&[], &[]) => vec![0],
         (&[0], &[0]) => vec![0],
@@ -189,10 +195,10 @@ fn sub(lhs: &[u64], rhs: &[u64]) -> Vec<u64> {
     }
 }
 
-fn _sub(lhs: &[u64], rhs: &[u64]) -> Vec<u64> {
+fn _sub(lhs: &[Digit], rhs: &[Digit]) -> Vec<Digit> {
     let min = rhs.len();
     let max = lhs.len();
-    let mut res: Vec<u64> = Vec::with_capacity(max);
+    let mut res: Vec<Digit> = Vec::with_capacity(max);
 
     lhs[min..max].iter().rev().for_each(|i| res.push(*i));
 
@@ -201,12 +207,12 @@ fn _sub(lhs: &[u64], rhs: &[u64]) -> Vec<u64> {
         let l_i = unsafe { *lhs.get_unchecked(i) };
         let r_i = unsafe { *rhs.get_unchecked(i) };
         if l_i < r_i {
-            res.push(1000000000000000000 + l_i - r_i);
+            res.push(BASE + l_i - r_i);
             let mut j = res.len() - 2;
             loop {
                 unsafe {
                     if *res.get_unchecked(j) == 0 {
-                        *res.get_unchecked_mut(j) = 999999999999999999;
+                        *res.get_unchecked_mut(j) = BASE - 1;
                     } else {
                         *res.get_unchecked_mut(j) -= 1;
                         break;
@@ -230,7 +236,7 @@ fn _sub(lhs: &[u64], rhs: &[u64]) -> Vec<u64> {
     res
 }
 
-fn trim_end_zeros(slice: &mut Vec<u64>) {
+fn trim_end_zeros(slice: &mut Vec<Digit>) {
     let mut i = slice.len() - 1;
     if unsafe { *slice.get_unchecked(i) != 0 } {
         return;
@@ -356,19 +362,19 @@ fn trim_end_zeros(slice: &mut Vec<u64>) {
 //     res
 // }
 
-fn _mul(lhs: &[u64], rhs: &[u64]) -> Vec<u64> {
+fn _mul(lhs: &[Digit], rhs: &[Digit]) -> Vec<Digit> {
     let mut result = vec![0; lhs.len() + rhs.len()];
 
     for (i, &digit1) in lhs.iter().enumerate() {
         let mut carry = 0;
         for (j, &digit2) in rhs.iter().enumerate() {
-            let product = digit1 as u128 * digit2 as u128
-                + unsafe { *result.get_unchecked(i + j) } as u128
-                + carry as u128;
-            unsafe { *result.get_unchecked_mut(i + j) = (product % 1000000000000000000) as u64 };
-            carry = product / 1000000000000000000;
+            let product = digit1 as DoubleDigit * digit2 as DoubleDigit
+                + unsafe { *result.get_unchecked(i + j) } as DoubleDigit
+                + carry as DoubleDigit;
+            unsafe { *result.get_unchecked_mut(i + j) = (product % BASE as DoubleDigit) as Digit };
+            carry = product / BASE as DoubleDigit;
         }
-        unsafe { *result.get_unchecked_mut(i + rhs.len()) = carry as u64 };
+        unsafe { *result.get_unchecked_mut(i + rhs.len()) = carry as Digit };
     }
 
     trim_end_zeros(&mut result);
@@ -415,7 +421,7 @@ fn _mul(lhs: &[u64], rhs: &[u64]) -> Vec<u64> {
 //     res
 // }
 
-fn mul(lhs: &[u64], rhs: &[u64]) -> Vec<u64> {
+fn mul(lhs: &[Digit], rhs: &[Digit]) -> Vec<Digit> {
     match (lhs, rhs) {
         (&[], _) => return vec![0],
         (_, &[]) => return vec![0],
@@ -521,8 +527,8 @@ impl From<String> for BigInt {
             bytes.remove(0);
         }
 
-        let rem_len = bytes.len() % 18;
-        let mut rem: u64 = 0;
+        let rem_len = bytes.len() % BASE_POW;
+        let mut rem: Digit = 0;
         if rem_len > 0 {
             let mut _rem: Vec<u8> = vec![0; rem_len];
             for i in 0..rem_len {
@@ -531,12 +537,12 @@ impl From<String> for BigInt {
             rem = String::from_utf8(_rem).unwrap().parse().unwrap();
         }
 
-        let mut bytes: Vec<u64> = bytes
-            .chunks(18)
+        let mut bytes: Vec<Digit> = bytes
+            .chunks(BASE_POW)
             .map(|i| {
                 String::from_utf8(i.to_vec())
                     .unwrap()
-                    .parse::<u64>()
+                    .parse::<Digit>()
                     .unwrap()
             })
             .collect();
@@ -873,70 +879,76 @@ impl Clone for BigInt {
     }
 }
 
-// macro_rules! impl_try_into_int {
-//     ($t1:ty, $t2:ty) => {
-//         impl TryInto<$t1> for $t2 {
-//             type Error = ParseIntError;
+macro_rules! impl_try_into_int {
+    ($t1:ty, $t2:ty) => {
+        impl TryInto<$t1> for $t2 {
+            type Error = ParseIntError;
 
-//             fn try_into(self) -> Result<$t1, Self::Error> {
-//                 let s = self.to_string();
-//                 let n = s.parse::<$t1>()?;
-//                 Ok(n)
-//             }
-//         }
-//     };
-// }
+            fn try_into(self) -> Result<$t1, Self::Error> {
+                let s = self.to_string();
+                let n = s.parse::<$t1>()?;
+                Ok(n)
+            }
+        }
+    };
+}
 
-// impl_try_into_int!(usize, BigInt);
-// impl_try_into_int!(u8, BigInt);
-// impl_try_into_int!(u16, BigInt);
-// impl_try_into_int!(u32, BigInt);
-// impl_try_into_int!(u64, BigInt);
-// impl_try_into_int!(u128, BigInt);
-// impl_try_into_int!(isize, BigInt);
-// impl_try_into_int!(i8, BigInt);
-// impl_try_into_int!(i16, BigInt);
-// impl_try_into_int!(i32, BigInt);
-// impl_try_into_int!(i64, BigInt);
-// impl_try_into_int!(i128, BigInt);
-// impl_try_into_int!(usize, &BigInt);
-// impl_try_into_int!(u8, &BigInt);
-// impl_try_into_int!(u16, &BigInt);
-// impl_try_into_int!(u32, &BigInt);
-// impl_try_into_int!(u64, &BigInt);
-// impl_try_into_int!(u128, &BigInt);
-// impl_try_into_int!(isize, &BigInt);
-// impl_try_into_int!(i8, &BigInt);
-// impl_try_into_int!(i16, &BigInt);
-// impl_try_into_int!(i32, &BigInt);
-// impl_try_into_int!(i64, &BigInt);
-// impl_try_into_int!(i128, &BigInt);
-// impl_try_into_int!(usize, &mut BigInt);
-// impl_try_into_int!(u8, &mut BigInt);
-// impl_try_into_int!(u16, &mut BigInt);
-// impl_try_into_int!(u32, &mut BigInt);
-// impl_try_into_int!(u64, &mut BigInt);
-// impl_try_into_int!(u128, &mut BigInt);
-// impl_try_into_int!(isize, &mut BigInt);
-// impl_try_into_int!(i8, &mut BigInt);
-// impl_try_into_int!(i16, &mut BigInt);
-// impl_try_into_int!(i32, &mut BigInt);
-// impl_try_into_int!(i64, &mut BigInt);
-// impl_try_into_int!(i128, &mut BigInt);
+impl_try_into_int!(usize, BigInt);
+impl_try_into_int!(u8, BigInt);
+impl_try_into_int!(u16, BigInt);
+impl_try_into_int!(u32, BigInt);
+impl_try_into_int!(u64, BigInt);
+impl_try_into_int!(u128, BigInt);
+impl_try_into_int!(isize, BigInt);
+impl_try_into_int!(i8, BigInt);
+impl_try_into_int!(i16, BigInt);
+impl_try_into_int!(i32, BigInt);
+impl_try_into_int!(i64, BigInt);
+impl_try_into_int!(i128, BigInt);
+impl_try_into_int!(usize, &BigInt);
+impl_try_into_int!(u8, &BigInt);
+impl_try_into_int!(u16, &BigInt);
+impl_try_into_int!(u32, &BigInt);
+impl_try_into_int!(u64, &BigInt);
+impl_try_into_int!(u128, &BigInt);
+impl_try_into_int!(isize, &BigInt);
+impl_try_into_int!(i8, &BigInt);
+impl_try_into_int!(i16, &BigInt);
+impl_try_into_int!(i32, &BigInt);
+impl_try_into_int!(i64, &BigInt);
+impl_try_into_int!(i128, &BigInt);
+impl_try_into_int!(usize, &mut BigInt);
+impl_try_into_int!(u8, &mut BigInt);
+impl_try_into_int!(u16, &mut BigInt);
+impl_try_into_int!(u32, &mut BigInt);
+impl_try_into_int!(u64, &mut BigInt);
+impl_try_into_int!(u128, &mut BigInt);
+impl_try_into_int!(isize, &mut BigInt);
+impl_try_into_int!(i8, &mut BigInt);
+impl_try_into_int!(i16, &mut BigInt);
+impl_try_into_int!(i32, &mut BigInt);
+impl_try_into_int!(i64, &mut BigInt);
+impl_try_into_int!(i128, &mut BigInt);
 
-// macro_rules! impl_to_string {
-//     ($($t:ty)+) => ($(
-//         impl ToString for $t {
-//             fn to_string(&self) -> String {
-//                 let mut x: Vec<u8> = self.digits.iter().map(|i| *i + b'0').collect();
-//                 if !self.positive {
-//                     x.push(b'-');
-//                 }
-//                 x.reverse();
-//                 String::from_utf8(x).unwrap()
-//             }
-//         }
-//     )+);
-// }
+macro_rules! impl_to_string {
+    ($($t:ty)+) => ($(
+        impl ToString for $t {
+            fn to_string(&self) -> String {
+                let mut x: String = self.digits.iter().map(|i| {
+                    let s = i.to_string();
+                    if s == "0".to_string() {
+                        s.repeat(BASE_POW)
+                    } else {
+                        s
+                    }
+                }).rev().collect();
+                if !self.positive {
+                    x.insert(0, '-');
+                }
+                x
+            }
+        }
+    )+);
+}
 
-// impl_to_string! { BigInt &BigInt &mut BigInt}
+impl_to_string! { BigInt &BigInt &mut BigInt}
