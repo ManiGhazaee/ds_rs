@@ -1,7 +1,7 @@
 use std::{thread::Builder, time::Instant};
 
-use ds_rs::bigint::{self, ToBigInt};
 use ds_rs::bigint::BigInt;
+use ds_rs::bigint::ToBigInt;
 use ds_rs::{
     matrix::{Matrix, MatrixVec},
     PerfRelative,
@@ -10,9 +10,14 @@ use rand::Rng;
 
 fn main() {
     let inst = Instant::now();
-    let x = 10000.to_bigint().fact();
+    let mut i = 1;
+    let mut res = BigInt::one();
+    while i <= 10000 {
+        res *= i.to_bigint();
+        i += 1;
+    }
     dbg!(inst.elapsed());
-    dbg!(x.digit_count());
+    dbg!(res.digit_count());
 }
 
 #[allow(dead_code)]

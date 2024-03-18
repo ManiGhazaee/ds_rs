@@ -1,18 +1,16 @@
-use rayon::prelude::*;
 use std::{
-    cmp::{self, Ordering},
-    num::ParseIntError,
+    cmp::Ordering,
     ops::{Add, AddAssign, Mul, MulAssign, Shl, Shr, Sub},
 };
 
 #[derive(Debug)]
 pub struct BigInt {
-    digits: Vec<u8>,
+    digits: Vec<u64>,
     positive: bool,
 }
 
 impl BigInt {
-    pub fn new(vec: Vec<u8>, positive: bool) -> Self {
+    pub fn new(vec: Vec<u64>, positive: bool) -> Self {
         let mut vec = if vec.is_empty() { vec![0] } else { vec };
         trim_end_zeros(&mut vec);
         BigInt {
@@ -72,48 +70,47 @@ impl BigInt {
         if self == Self::zero() {
             return Self::one();
         }
-
         let mut i = Self::one();
         let mut res = Self::one();
         loop {
-            res *= i.clone();
+            res *= &i;
             if i == self {
                 break res;
             }
-            i = i.incrument();
+            i += Self::one();
         }
     }
 
-    pub fn incrument(self) -> Self {
-        self + Self::one()
-    }
+    // pub fn to_usize(&self) -> Result<usize, ParseIntError> {
+    //     TryInto::<usize>::try_into(self)
+    // }
 
-    pub fn get_digit(&self, index: usize) -> Option<&u8> {
-        self.digits.get(index)
-    }
+    // pub fn get_digit(&self, index: usize) -> Option<&u8> {
+    //     self.digits.get(index)
+    // }
 
-    pub fn get_digit_mut(&mut self, index: usize) -> Option<&mut u8> {
-        self.digits.get_mut(index)
-    }
+    // pub fn get_digit_mut(&mut self, index: usize) -> Option<&mut u8> {
+    //     self.digits.get_mut(index)
+    // }
 
     pub fn digit_count(&self) -> usize {
         self.digits.len()
     }
 
-    pub fn digits(&self) -> &Vec<u8> {
-        self.digits.as_ref()
-    }
+    // pub fn digits(&self) -> &Vec<u8> {
+    //     self.digits.as_ref()
+    // }
 
-    pub(super) fn div_by_three(&self) -> Self {
-        BigInt::new(div_by_three(&self.digits), self.positive)
-    }
+    // pub(super) fn div_by_three(&self) -> Self {
+    //     BigInt::new(div_by_three(&self.digits), self.positive)
+    // }
 
-    pub(super) fn div_by_two(&self) -> Self {
-        BigInt::new(div_by_two(&self.digits), self.positive)
-    }
+    // pub(super) fn div_by_two(&self) -> Self {
+    //     BigInt::new(div_by_two(&self.digits), self.positive)
+    // }
 }
 
-fn _cmp(lhs: &[u8], rhs: &[u8]) -> Ordering {
+fn _cmp(lhs: &[u64], rhs: &[u64]) -> Ordering {
     let lcmp = _len_cmp(lhs, rhs);
     let Ordering::Equal = lcmp else {
         return lcmp;
@@ -130,7 +127,7 @@ fn _cmp(lhs: &[u8], rhs: &[u8]) -> Ordering {
     Ordering::Equal
 }
 
-fn _len_cmp(lhs: &[u8], rhs: &[u8]) -> Ordering {
+fn _len_cmp(lhs: &[u64], rhs: &[u64]) -> Ordering {
     if lhs.len() > rhs.len() {
         Ordering::Greater
     } else if lhs.len() < rhs.len() {
@@ -140,7 +137,7 @@ fn _len_cmp(lhs: &[u8], rhs: &[u8]) -> Ordering {
     }
 }
 
-fn add(lhs: &[u8], rhs: &[u8]) -> Vec<u8> {
+fn add(lhs: &[u64], rhs: &[u64]) -> Vec<u64> {
     match (lhs, rhs) {
         (&[], &[]) => vec![0],
         (&[0], &[0]) => vec![0],
@@ -150,7 +147,7 @@ fn add(lhs: &[u8], rhs: &[u8]) -> Vec<u8> {
     }
 }
 
-fn _add(lhs: &[u8], rhs: &[u8]) -> Vec<u8> {
+fn _add(lhs: &[u64], rhs: &[u64]) -> Vec<u64> {
     let mut carry = 0;
     let mut i = 0;
     let (min, max, max_ref) = if lhs.len() > rhs.len() {
@@ -159,29 +156,19 @@ fn _add(lhs: &[u8], rhs: &[u8]) -> Vec<u8> {
         (lhs.len(), rhs.len(), rhs)
     };
 
-    let mut res: Vec<u8> = Vec::with_capacity(max + 1);
+    let mut res: Vec<u64> = Vec::with_capacity(max + 1);
 
     while i < min {
         let a = unsafe { *lhs.get_unchecked(i) + *rhs.get_unchecked(i) + carry };
-        if a > 9 {
-            res.push(a - 10);
-            carry = 1;
-        } else {
-            res.push(a);
-            carry = 0;
-        }
+        res.push(a % 1000000000000000000);
+        carry = a / 1000000000000000000;
         i += 1;
     }
 
     while i < max {
         let a = unsafe { *max_ref.get_unchecked(i) + carry };
-        if a > 9 {
-            res.push(a - 10);
-            carry = 1;
-        } else {
-            res.push(a);
-            carry = 0;
-        }
+        res.push(a % 10);
+        carry = a / 10;
         i += 1;
     }
 
@@ -189,12 +176,10 @@ fn _add(lhs: &[u8], rhs: &[u8]) -> Vec<u8> {
         res.push(carry);
     }
 
-    trim_end_zeros(&mut res);
-
     res
 }
 
-fn sub(lhs: &[u8], rhs: &[u8]) -> Vec<u8> {
+fn sub(lhs: &[u64], rhs: &[u64]) -> Vec<u64> {
     match (lhs, rhs) {
         (&[], &[]) => vec![0],
         (&[0], &[0]) => vec![0],
@@ -204,10 +189,10 @@ fn sub(lhs: &[u8], rhs: &[u8]) -> Vec<u8> {
     }
 }
 
-fn _sub(lhs: &[u8], rhs: &[u8]) -> Vec<u8> {
+fn _sub(lhs: &[u64], rhs: &[u64]) -> Vec<u64> {
     let min = rhs.len();
     let max = lhs.len();
-    let mut res: Vec<u8> = Vec::with_capacity(max);
+    let mut res: Vec<u64> = Vec::with_capacity(max);
 
     lhs[min..max].iter().rev().for_each(|i| res.push(*i));
 
@@ -216,12 +201,12 @@ fn _sub(lhs: &[u8], rhs: &[u8]) -> Vec<u8> {
         let l_i = unsafe { *lhs.get_unchecked(i) };
         let r_i = unsafe { *rhs.get_unchecked(i) };
         if l_i < r_i {
-            res.push(10 + l_i - r_i);
+            res.push(1000000000000000000 + l_i - r_i);
             let mut j = res.len() - 2;
             loop {
                 unsafe {
                     if *res.get_unchecked(j) == 0 {
-                        *res.get_unchecked_mut(j) = 9;
+                        *res.get_unchecked_mut(j) = 999999999999999999;
                     } else {
                         *res.get_unchecked_mut(j) -= 1;
                         break;
@@ -245,7 +230,7 @@ fn _sub(lhs: &[u8], rhs: &[u8]) -> Vec<u8> {
     res
 }
 
-fn trim_end_zeros(slice: &mut Vec<u8>) {
+fn trim_end_zeros(slice: &mut Vec<u64>) {
     let mut i = slice.len() - 1;
     if unsafe { *slice.get_unchecked(i) != 0 } {
         return;
@@ -265,273 +250,302 @@ fn trim_end_zeros(slice: &mut Vec<u8>) {
     }
 }
 
-fn xx_mul(lhs: &[u8], rhs: &[u8]) -> Vec<u8> {
-    let (min, max, min_ref, max_ref) = if lhs.len() > rhs.len() {
-        (rhs.len(), lhs.len(), rhs, lhs)
-    } else {
-        (lhs.len(), rhs.len(), lhs, rhs)
-    };
+// fn xx_mul(lhs: &[u8], rhs: &[u8]) -> Vec<u8> {
+//     let (min, max, min_ref, max_ref) = if lhs.len() > rhs.len() {
+//         (rhs.len(), lhs.len(), rhs, lhs)
+//     } else {
+//         (lhs.len(), rhs.len(), lhs, rhs)
+//     };
 
-    let mut carry = 0;
-    let mut temp: Vec<u8> = Vec::with_capacity(max);
-    let mut res: Vec<u8> = Vec::with_capacity(max);
+//     let mut carry = 0;
+//     let mut temp: Vec<u8> = Vec::with_capacity(max);
+//     let mut res: Vec<u8> = Vec::with_capacity(max);
 
-    let mut i = 0;
-    while i < min {
-        (0..i).for_each(|_| temp.push(0));
+//     let mut i = 0;
+//     while i < min {
+//         (0..i).for_each(|_| temp.push(0));
 
-        let mut j = 0;
-        while j < max {
-            let a = unsafe { max_ref.get_unchecked(j) * min_ref.get_unchecked(i) + carry };
-            if a > 9 {
-                temp.push(a % 10);
-                carry = a / 10;
-            } else {
-                temp.push(a);
-                carry = 0;
-            }
-            j += 1;
-        }
-        if carry != 0 {
-            temp.push(carry);
-            carry = 0;
-        }
-        res = _add(&res, &temp);
-        temp.clear();
+//         let mut j = 0;
+//         while j < max {
+//             let a = unsafe { max_ref.get_unchecked(j) * min_ref.get_unchecked(i) + carry };
+//             if a > 9 {
+//                 temp.push(a % 10);
+//                 carry = a / 10;
+//             } else {
+//                 temp.push(a);
+//                 carry = 0;
+//             }
+//             j += 1;
+//         }
+//         if carry != 0 {
+//             temp.push(carry);
+//             carry = 0;
+//         }
+//         res = _add(&res, &temp);
+//         temp.clear();
 
-        i += 1;
-    }
+//         i += 1;
+//     }
 
-    trim_end_zeros(&mut res);
+//     trim_end_zeros(&mut res);
 
-    res
-}
+//     res
+// }
 
-fn x_mul(lhs: &[u8], rhs: &[u8]) -> Vec<u8> {
-    let (min, max, min_ref, max_ref) = if lhs.len() > rhs.len() {
-        (rhs.len(), lhs.len(), rhs, lhs)
-    } else {
-        (lhs.len(), rhs.len(), lhs, rhs)
-    };
+// fn x_mul(lhs: &[u8], rhs: &[u8]) -> Vec<u8> {
+//     let (min, max, min_ref, max_ref) = if lhs.len() > rhs.len() {
+//         (rhs.len(), lhs.len(), rhs, lhs)
+//     } else {
+//         (lhs.len(), rhs.len(), lhs, rhs)
+//     };
 
-    let mut res: Vec<u8> = vec![0; max + min];
+//     let mut res: Vec<u8> = vec![0; max + min];
 
-    for i in 0..min {
-        let mut carry = 0;
-        let mut j = 0;
-        while j < max {
-            let a = unsafe { max_ref.get_unchecked(j) * min_ref.get_unchecked(i) + carry };
-            let sum = unsafe { *res.get_unchecked(i + j) } + a;
-            unsafe { *res.get_unchecked_mut(i + j) = sum % 10 };
-            carry = sum / 10;
-            j += 1;
-        }
-        let mut k = i + j;
-        while carry != 0 {
-            let sum = unsafe { *res.get_unchecked(k) } + carry;
-            unsafe { *res.get_unchecked_mut(k) = sum % 10 };
-            carry = sum / 10;
-            k += 1;
-        }
-    }
+//     for i in 0..min {
+//         let mut carry = 0;
+//         let mut j = 0;
+//         while j < max {
+//             let a = unsafe { max_ref.get_unchecked(j) * min_ref.get_unchecked(i) + carry };
+//             let sum = unsafe { *res.get_unchecked(i + j) } + a;
+//             unsafe { *res.get_unchecked_mut(i + j) = sum % 10 };
+//             carry = sum / 10;
+//             j += 1;
+//         }
+//         let mut k = i + j;
+//         while carry != 0 {
+//             let sum = unsafe { *res.get_unchecked(k) } + carry;
+//             unsafe { *res.get_unchecked_mut(k) = sum % 10 };
+//             carry = sum / 10;
+//             k += 1;
+//         }
+//     }
 
-    trim_end_zeros(&mut res);
+//     trim_end_zeros(&mut res);
 
-    res
-}
+//     res
+// }
 
-fn y_mul(lhs: &[u8], rhs: &[u8]) -> Vec<u8> {
-    let (min_ref, max_ref) = if lhs.len() > rhs.len() {
-        (rhs, lhs)
-    } else {
-        (lhs, rhs)
-    };
+// fn y_mul(lhs: &[u8], rhs: &[u8]) -> Vec<u8> {
+//     let (min_ref, max_ref) = if lhs.len() > rhs.len() {
+//         (rhs, lhs)
+//     } else {
+//         (lhs, rhs)
+//     };
 
-    let mut res = vec![0; lhs.len() + rhs.len()];
+//     let mut res = vec![0; lhs.len() + rhs.len()];
 
-    for (i, &digit_i) in min_ref.iter().enumerate() {
-        let mut carry = 0;
-        for (j, &digit_j) in max_ref.iter().enumerate() {
-            let index = i + j;
-            let product = unsafe { *res.get_unchecked(index) } + digit_i * digit_j + carry;
-            unsafe { *res.get_unchecked_mut(index) = product % 10 };
-            carry = product / 10;
-        }
-        let mut k = i + max_ref.len();
-        while carry != 0 {
-            let sum = unsafe { res.get_unchecked(k) } + carry;
-            unsafe { *res.get_unchecked_mut(k) = sum % 10 };
-            carry = sum / 10;
-            k += 1;
-        }
-    }
+//     for (i, &digit_i) in min_ref.iter().enumerate() {
+//         let mut carry = 0;
+//         for (j, &digit_j) in max_ref.iter().enumerate() {
+//             let index = i + j;
+//             let product = unsafe { *res.get_unchecked(index) } + digit_i * digit_j + carry;
+//             unsafe { *res.get_unchecked_mut(index) = product % 10 };
+//             carry = product / 10;
+//         }
+//         let mut k = i + max_ref.len();
+//         while carry != 0 {
+//             let sum = unsafe { res.get_unchecked(k) } + carry;
+//             unsafe { *res.get_unchecked_mut(k) = sum % 10 };
+//             carry = sum / 10;
+//             k += 1;
+//         }
+//     }
 
-    trim_end_zeros(&mut res);
+//     trim_end_zeros(&mut res);
 
-    res
-}
+//     res
+// }
 
-fn _mul(lhs: &[u8], rhs: &[u8]) -> Vec<u8> {
+fn _mul(lhs: &[u64], rhs: &[u64]) -> Vec<u64> {
     let mut result = vec![0; lhs.len() + rhs.len()];
 
     for (i, &digit1) in lhs.iter().enumerate() {
         let mut carry = 0;
         for (j, &digit2) in rhs.iter().enumerate() {
-            let product = digit1 * digit2 + unsafe { *result.get_unchecked(i + j) } + carry;
-            unsafe { *result.get_unchecked_mut(i + j) = product % 10 };
-            carry = (product / 10) as u8;
+            let product = digit1 as u128 * digit2 as u128
+                + unsafe { *result.get_unchecked(i + j) } as u128
+                + carry as u128;
+            unsafe { *result.get_unchecked_mut(i + j) = (product % 1000000000000000000) as u64 };
+            carry = product / 1000000000000000000;
         }
-        unsafe { *result.get_unchecked_mut(i + rhs.len()) = carry };
+        unsafe { *result.get_unchecked_mut(i + rhs.len()) = carry as u64 };
     }
 
-    while let Some(&0) = result.last() {
-        result.pop();
-    }
+    trim_end_zeros(&mut result);
 
     result
 }
 
-fn _mul_t3(lhs: &[u8], rhs: &[u8]) -> BigInt {
-    let max = if let Ordering::Greater = _len_cmp(lhs, rhs) {
-        lhs
-    } else {
-        rhs
-    };
+// fn _mul_t3(lhs: &[u8], rhs: &[u8]) -> BigInt {
+//     let max = if let Ordering::Greater = _len_cmp(lhs, rhs) {
+//         lhs
+//     } else {
+//         rhs
+//     };
 
-    let div = max.len() / 3 + 1;
+//     let div = max.len() / 3 + 1;
 
-    let (p0, p1, p2, _p1, _p2) = _t3_eval(lhs, div);
-    let (q0, q1, q2, _q1, _q2) = _t3_eval(rhs, div);
+//     let (p0, p1, p2, _p1, _p2) = _t3_eval(lhs, div);
+//     let (q0, q1, q2, _q1, _q2) = _t3_eval(rhs, div);
 
-    let r_0 = &p0 * &q0;
-    let r_1 = &p1 * &q1;
-    let r_2 = &p2 * &q2;
-    let _r_1 = &_p1 * &_q1;
-    let _r_2 = &_p2 * &_q2;
+//     let r_0 = &p0 * &q0;
+//     let r_1 = &p1 * &q1;
+//     let r_2 = &p2 * &q2;
+//     let _r_1 = &_p1 * &_q1;
+//     let _r_2 = &_p2 * &_q2;
 
-    let r0 = &r_0;
-    let r4 = &r_2;
-    let r3 = (&_r_2 - &r_1).div_by_three();
-    let r1 = (&r_1 - &_r_1).div_by_two();
-    let r2 = &_r_1 - &r_0;
-    let r3 = (&r2 - &r3).div_by_two() + (&BigInt::two() * &r_2);
-    let r2 = &(&r2 + &r1) - r4;
-    let r1 = &r1 - &r3;
+//     let r0 = &r_0;
+//     let r4 = &r_2;
+//     let r3 = (&_r_2 - &r_1).div_by_three();
+//     let r1 = (&r_1 - &_r_1).div_by_two();
+//     let r2 = &_r_1 - &r_0;
+//     let r3 = (&r2 - &r3).div_by_two() + (&BigInt::two() * &r_2);
+//     let r2 = &(&r2 + &r1) - r4;
+//     let r1 = &r1 - &r3;
 
-    let mut res = BigInt::zero();
-    res += r0;
-    res += r1 >> div;
-    res += r2 >> (2 * div);
-    res += r3 >> (3 * div);
-    res += r4 >> (4 * div);
+//     let mut res = BigInt::zero();
+//     res += r0;
+//     res += r1 >> div;
+//     res += r2 >> (2 * div);
+//     res += r3 >> (3 * div);
+//     res += r4 >> (4 * div);
 
-    trim_end_zeros(&mut res.digits);
+//     trim_end_zeros(&mut res.digits);
 
-    res
-}
+//     res
+// }
 
-fn mul(lhs: &[u8], rhs: &[u8]) -> Vec<u8> {
+fn mul(lhs: &[u64], rhs: &[u64]) -> Vec<u64> {
     match (lhs, rhs) {
         (&[], _) => return vec![0],
         (_, &[]) => return vec![0],
         (&[0], _) => return vec![0],
         (_, &[0]) => return vec![0],
         (x, y) => {
-            return if cmp::min(x.len(), y.len()) > 32 {
-                _mul_t3(x, y).digits
-            } else {
-                _mul(x, y)
-            }
+            // return if cmp::min(x.len(), y.len()) > 32 {
+            //     // _mul_t3(x, y).digits
+            //     panic!();
+            // } else {
+            _mul(x, y)
+            // };
         }
     }
 }
 
-#[inline]
-fn _t3_eval<'a>(num: &'a [u8], div: usize) -> (BigInt, BigInt, BigInt, BigInt, BigInt) {
-    let m0 = BigInt::new(num[0..cmp::min(div, num.len())].to_vec(), true);
-    let m1 = BigInt::new(
-        num[cmp::min(div, num.len())..cmp::min(div * 2, num.len())].to_vec(),
-        true,
-    );
-    let m2 = BigInt::new(
-        num[cmp::min(div * 2, num.len())..cmp::min(div * 3, num.len())].to_vec(),
-        true,
-    );
-    let p0 = &m0 + &m2;
-    let p_0 = &m0;
-    let p_1 = &p0 + &m1;
-    let p_2 = &m2;
-    let _p_1 = &p0 - &m1;
-    let _p_2 = &((&_p_1 + &m2) * BigInt::two()) - &m0;
-    (p_0.clone(), p_1, p_2.clone(), _p_1, _p_2)
-}
+// #[inline]
+// fn _t3_eval<'a>(num: &'a [u8], div: usize) -> (BigInt, BigInt, BigInt, BigInt, BigInt) {
+//     let m0 = BigInt::new(num[0..cmp::min(div, num.len())].to_vec(), true);
+//     let m1 = BigInt::new(
+//         num[cmp::min(div, num.len())..cmp::min(div * 2, num.len())].to_vec(),
+//         true,
+//     );
+//     let m2 = BigInt::new(
+//         num[cmp::min(div * 2, num.len())..cmp::min(div * 3, num.len())].to_vec(),
+//         true,
+//     );
+//     let p0 = &m0 + &m2;
+//     let p_0 = &m0;
+//     let p_1 = &p0 + &m1;
+//     let p_2 = &m2;
+//     let _p_1 = &p0 - &m1;
+//     let _p_2 = &((&_p_1 + &m2) * BigInt::two()) - &m0;
+//     (p_0.clone(), p_1, p_2.clone(), _p_1, _p_2)
+// }
 
-pub fn div_by_two(num: &[u8]) -> Vec<u8> {
-    let mut num = Vec::from(num);
-    num.reverse();
-    let mut result = Vec::with_capacity(num.len());
-    let mut carry = 0;
+// pub fn div_by_two(num: &[u8]) -> Vec<u8> {
+//     let mut num = Vec::from(num);
+//     num.reverse();
+//     let mut result = Vec::with_capacity(num.len());
+//     let mut carry = 0;
 
-    for &digit in num.iter() {
-        let value = digit / 2 + carry;
-        carry = digit % 2 * 5;
+//     for &digit in num.iter() {
+//         let value = digit / 2 + carry;
+//         carry = digit % 2 * 5;
 
-        if value == 0 && result.is_empty() {
-            continue;
-        }
+//         if value == 0 && result.is_empty() {
+//             continue;
+//         }
 
-        result.push(value);
-    }
+//         result.push(value);
+//     }
 
-    if result.is_empty() {
-        result.push(0);
-    }
+//     if result.is_empty() {
+//         result.push(0);
+//     }
 
-    result.reverse();
-    result
-}
+//     result.reverse();
+//     result
+// }
 
-pub fn div_by_three(num: &[u8]) -> Vec<u8> {
-    let mut num = Vec::from(num);
-    num.reverse();
-    let mut result = Vec::with_capacity(num.len());
-    let mut carry = 0;
+// pub fn div_by_three(num: &[u8]) -> Vec<u8> {
+//     let mut num = Vec::from(num);
+//     num.reverse();
+//     let mut result = Vec::with_capacity(num.len());
+//     let mut carry = 0;
 
-    for &digit in num.iter() {
-        let value = carry * 10 + digit;
-        carry = value % 3;
+//     for &digit in num.iter() {
+//         let value = carry * 10 + digit;
+//         carry = value % 3;
 
-        if value == 0 && result.is_empty() {
-            continue;
-        }
+//         if value == 0 && result.is_empty() {
+//             continue;
+//         }
 
-        result.push(value / 3);
-    }
+//         result.push(value / 3);
+//     }
 
-    if result.is_empty() {
-        result.push(0);
-    }
+//     if result.is_empty() {
+//         result.push(0);
+//     }
 
-    result.reverse();
-    trim_end_zeros(&mut result);
+//     result.reverse();
+//     trim_end_zeros(&mut result);
 
-    result
-}
+//     result
+// }
 
 impl From<&'static str> for BigInt {
     fn from(value: &'static str) -> Self {
+        BigInt::from(value.to_string())
+    }
+}
+
+impl From<String> for BigInt {
+    fn from(value: String) -> Self {
         let mut bytes: Vec<u8> = value.into();
         bytes.retain(|i| *i <= b'9' && *i >= b'0' || *i == b'-');
 
         let positive = bytes[0] != b'-';
 
-        bytes = bytes
-            .iter()
-            .skip(if positive { 0 } else { 1 })
-            .map(|i| *i - b'0')
+        if !positive {
+            bytes.remove(0);
+        }
+
+        let rem_len = bytes.len() % 18;
+        let mut rem: u64 = 0;
+        if rem_len > 0 {
+            let mut _rem: Vec<u8> = vec![0; rem_len];
+            for i in 0..rem_len {
+                _rem[i] = bytes.remove(0);
+            }
+            rem = String::from_utf8(_rem).unwrap().parse().unwrap();
+        }
+
+        let mut bytes: Vec<u64> = bytes
+            .chunks(18)
+            .map(|i| {
+                String::from_utf8(i.to_vec())
+                    .unwrap()
+                    .parse::<u64>()
+                    .unwrap()
+            })
             .collect();
 
         bytes.reverse();
+
+        if rem_len != 0 {
+            bytes.push(rem);
+        }
 
         Self {
             digits: bytes,
@@ -561,23 +575,8 @@ macro_rules! impl_from_int {
     ($($t:ty)+) => ($(
         impl From<$t> for BigInt {
             fn from(value: $t) -> Self {
-                let mut bytes: Vec<u8> = value.to_string().into();
-                bytes.retain(|i| *i <= b'9' && *i >= b'0' || *i == b'-');
-
-                let positive = bytes[0] != b'-';
-
-                bytes = bytes
-                    .iter()
-                    .skip(if positive { 0 } else { 1 })
-                    .map(|i| *i - b'0')
-                    .collect();
-
-                bytes.reverse();
-
-                Self {
-                    digits: bytes,
-                    positive,
-                }
+                let bytes = value.to_string();
+                BigInt::from(bytes)
             }
         }
     )+)
@@ -874,70 +873,70 @@ impl Clone for BigInt {
     }
 }
 
-macro_rules! impl_try_into_int {
-    ($t1:ty, $t2:ty) => {
-        impl TryInto<$t1> for $t2 {
-            type Error = ParseIntError;
+// macro_rules! impl_try_into_int {
+//     ($t1:ty, $t2:ty) => {
+//         impl TryInto<$t1> for $t2 {
+//             type Error = ParseIntError;
 
-            fn try_into(self) -> Result<$t1, Self::Error> {
-                let s = self.to_string();
-                let n = s.parse::<$t1>()?;
-                Ok(n)
-            }
-        }
-    };
-}
+//             fn try_into(self) -> Result<$t1, Self::Error> {
+//                 let s = self.to_string();
+//                 let n = s.parse::<$t1>()?;
+//                 Ok(n)
+//             }
+//         }
+//     };
+// }
 
-impl_try_into_int!(usize, BigInt);
-impl_try_into_int!(u8, BigInt);
-impl_try_into_int!(u16, BigInt);
-impl_try_into_int!(u32, BigInt);
-impl_try_into_int!(u64, BigInt);
-impl_try_into_int!(u128, BigInt);
-impl_try_into_int!(isize, BigInt);
-impl_try_into_int!(i8, BigInt);
-impl_try_into_int!(i16, BigInt);
-impl_try_into_int!(i32, BigInt);
-impl_try_into_int!(i64, BigInt);
-impl_try_into_int!(i128, BigInt);
-impl_try_into_int!(usize, &BigInt);
-impl_try_into_int!(u8, &BigInt);
-impl_try_into_int!(u16, &BigInt);
-impl_try_into_int!(u32, &BigInt);
-impl_try_into_int!(u64, &BigInt);
-impl_try_into_int!(u128, &BigInt);
-impl_try_into_int!(isize, &BigInt);
-impl_try_into_int!(i8, &BigInt);
-impl_try_into_int!(i16, &BigInt);
-impl_try_into_int!(i32, &BigInt);
-impl_try_into_int!(i64, &BigInt);
-impl_try_into_int!(i128, &BigInt);
-impl_try_into_int!(usize, &mut BigInt);
-impl_try_into_int!(u8, &mut BigInt);
-impl_try_into_int!(u16, &mut BigInt);
-impl_try_into_int!(u32, &mut BigInt);
-impl_try_into_int!(u64, &mut BigInt);
-impl_try_into_int!(u128, &mut BigInt);
-impl_try_into_int!(isize, &mut BigInt);
-impl_try_into_int!(i8, &mut BigInt);
-impl_try_into_int!(i16, &mut BigInt);
-impl_try_into_int!(i32, &mut BigInt);
-impl_try_into_int!(i64, &mut BigInt);
-impl_try_into_int!(i128, &mut BigInt);
+// impl_try_into_int!(usize, BigInt);
+// impl_try_into_int!(u8, BigInt);
+// impl_try_into_int!(u16, BigInt);
+// impl_try_into_int!(u32, BigInt);
+// impl_try_into_int!(u64, BigInt);
+// impl_try_into_int!(u128, BigInt);
+// impl_try_into_int!(isize, BigInt);
+// impl_try_into_int!(i8, BigInt);
+// impl_try_into_int!(i16, BigInt);
+// impl_try_into_int!(i32, BigInt);
+// impl_try_into_int!(i64, BigInt);
+// impl_try_into_int!(i128, BigInt);
+// impl_try_into_int!(usize, &BigInt);
+// impl_try_into_int!(u8, &BigInt);
+// impl_try_into_int!(u16, &BigInt);
+// impl_try_into_int!(u32, &BigInt);
+// impl_try_into_int!(u64, &BigInt);
+// impl_try_into_int!(u128, &BigInt);
+// impl_try_into_int!(isize, &BigInt);
+// impl_try_into_int!(i8, &BigInt);
+// impl_try_into_int!(i16, &BigInt);
+// impl_try_into_int!(i32, &BigInt);
+// impl_try_into_int!(i64, &BigInt);
+// impl_try_into_int!(i128, &BigInt);
+// impl_try_into_int!(usize, &mut BigInt);
+// impl_try_into_int!(u8, &mut BigInt);
+// impl_try_into_int!(u16, &mut BigInt);
+// impl_try_into_int!(u32, &mut BigInt);
+// impl_try_into_int!(u64, &mut BigInt);
+// impl_try_into_int!(u128, &mut BigInt);
+// impl_try_into_int!(isize, &mut BigInt);
+// impl_try_into_int!(i8, &mut BigInt);
+// impl_try_into_int!(i16, &mut BigInt);
+// impl_try_into_int!(i32, &mut BigInt);
+// impl_try_into_int!(i64, &mut BigInt);
+// impl_try_into_int!(i128, &mut BigInt);
 
-macro_rules! impl_to_string {
-    ($($t:ty)+) => ($(
-        impl ToString for $t {
-            fn to_string(&self) -> String {
-                let mut x: Vec<u8> = self.digits.iter().map(|i| *i + b'0').collect();
-                if !self.positive {
-                    x.push(b'-');
-                }
-                x.reverse();
-                String::from_utf8(x).unwrap()
-            }
-        }
-    )+);
-}
+// macro_rules! impl_to_string {
+//     ($($t:ty)+) => ($(
+//         impl ToString for $t {
+//             fn to_string(&self) -> String {
+//                 let mut x: Vec<u8> = self.digits.iter().map(|i| *i + b'0').collect();
+//                 if !self.positive {
+//                     x.push(b'-');
+//                 }
+//                 x.reverse();
+//                 String::from_utf8(x).unwrap()
+//             }
+//         }
+//     )+);
+// }
 
-impl_to_string! { BigInt &BigInt &mut BigInt}
+// impl_to_string! { BigInt &BigInt &mut BigInt}
