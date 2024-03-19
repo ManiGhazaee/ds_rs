@@ -1,6 +1,5 @@
 use std::{thread::Builder, time::Instant};
 
-use ds_rs::bigint;
 use ds_rs::bigint::BigInt;
 use ds_rs::bigint::ToBigInt;
 use ds_rs::{
@@ -9,7 +8,17 @@ use ds_rs::{
 };
 use rand::Rng;
 
-fn main() {}
+fn main() {
+    let inst = Instant::now();
+    let mut i = BigInt::one();
+    let mut res = BigInt::one();
+    while i <= 10000.to_bigint() {
+        res *= &i;
+        i += BigInt::one();
+    }
+    dbg!(inst.elapsed());
+    dbg!(res.to_string().len());
+}
 
 #[allow(dead_code)]
 fn linked_list() {

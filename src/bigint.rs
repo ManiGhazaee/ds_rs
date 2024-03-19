@@ -4,10 +4,10 @@ use std::{
     ops::{Add, AddAssign, Mul, MulAssign, Shl, Shr, Sub},
 };
 
-type Digit = u64;
-type DoubleDigit = u128;
-const BASE: Digit = 1000000000000000000;
-const BASE_POW: usize = 18;
+type Digit = u32;
+type DoubleDigit = u64;
+const BASE: Digit = 1000000000;
+const BASE_LEN: usize = 9;
 
 #[derive(Debug)]
 pub struct BigInt {
@@ -252,112 +252,6 @@ fn trim_end_zeros(slice: &mut Vec<Digit>) {
     }
 }
 
-// fn xx_mul(lhs: &[u8], rhs: &[u8]) -> Vec<u8> {
-//     let (min, max, min_ref, max_ref) = if lhs.len() > rhs.len() {
-//         (rhs.len(), lhs.len(), rhs, lhs)
-//     } else {
-//         (lhs.len(), rhs.len(), lhs, rhs)
-//     };
-
-//     let mut carry = 0;
-//     let mut temp: Vec<u8> = Vec::with_capacity(max);
-//     let mut res: Vec<u8> = Vec::with_capacity(max);
-
-//     let mut i = 0;
-//     while i < min {
-//         (0..i).for_each(|_| temp.push(0));
-
-//         let mut j = 0;
-//         while j < max {
-//             let a = unsafe { max_ref.get_unchecked(j) * min_ref.get_unchecked(i) + carry };
-//             if a > 9 {
-//                 temp.push(a % 10);
-//                 carry = a / 10;
-//             } else {
-//                 temp.push(a);
-//                 carry = 0;
-//             }
-//             j += 1;
-//         }
-//         if carry != 0 {
-//             temp.push(carry);
-//             carry = 0;
-//         }
-//         res = _add(&res, &temp);
-//         temp.clear();
-
-//         i += 1;
-//     }
-
-//     trim_end_zeros(&mut res);
-
-//     res
-// }
-
-// fn x_mul(lhs: &[u8], rhs: &[u8]) -> Vec<u8> {
-//     let (min, max, min_ref, max_ref) = if lhs.len() > rhs.len() {
-//         (rhs.len(), lhs.len(), rhs, lhs)
-//     } else {
-//         (lhs.len(), rhs.len(), lhs, rhs)
-//     };
-
-//     let mut res: Vec<u8> = vec![0; max + min];
-
-//     for i in 0..min {
-//         let mut carry = 0;
-//         let mut j = 0;
-//         while j < max {
-//             let a = unsafe { max_ref.get_unchecked(j) * min_ref.get_unchecked(i) + carry };
-//             let sum = unsafe { *res.get_unchecked(i + j) } + a;
-//             unsafe { *res.get_unchecked_mut(i + j) = sum % 10 };
-//             carry = sum / 10;
-//             j += 1;
-//         }
-//         let mut k = i + j;
-//         while carry != 0 {
-//             let sum = unsafe { *res.get_unchecked(k) } + carry;
-//             unsafe { *res.get_unchecked_mut(k) = sum % 10 };
-//             carry = sum / 10;
-//             k += 1;
-//         }
-//     }
-
-//     trim_end_zeros(&mut res);
-
-//     res
-// }
-
-// fn y_mul(lhs: &[u8], rhs: &[u8]) -> Vec<u8> {
-//     let (min_ref, max_ref) = if lhs.len() > rhs.len() {
-//         (rhs, lhs)
-//     } else {
-//         (lhs, rhs)
-//     };
-
-//     let mut res = vec![0; lhs.len() + rhs.len()];
-
-//     for (i, &digit_i) in min_ref.iter().enumerate() {
-//         let mut carry = 0;
-//         for (j, &digit_j) in max_ref.iter().enumerate() {
-//             let index = i + j;
-//             let product = unsafe { *res.get_unchecked(index) } + digit_i * digit_j + carry;
-//             unsafe { *res.get_unchecked_mut(index) = product % 10 };
-//             carry = product / 10;
-//         }
-//         let mut k = i + max_ref.len();
-//         while carry != 0 {
-//             let sum = unsafe { res.get_unchecked(k) } + carry;
-//             unsafe { *res.get_unchecked_mut(k) = sum % 10 };
-//             carry = sum / 10;
-//             k += 1;
-//         }
-//     }
-
-//     trim_end_zeros(&mut res);
-
-//     res
-// }
-
 fn _mul(lhs: &[Digit], rhs: &[Digit]) -> Vec<Digit> {
     let mut result = vec![0; lhs.len() + rhs.len()];
 
@@ -529,7 +423,7 @@ impl From<String> for BigInt {
             bytes.remove(0);
         }
 
-        let rem_len = bytes.len() % BASE_POW;
+        let rem_len = bytes.len() % BASE_LEN;
         let mut rem: Digit = 0;
         if rem_len > 0 {
             let mut _rem: Vec<u8> = vec![0; rem_len];
@@ -540,7 +434,7 @@ impl From<String> for BigInt {
         }
 
         let mut bytes: Vec<Digit> = bytes
-            .chunks(BASE_POW)
+            .chunks(BASE_LEN)
             .map(|i| {
                 String::from_utf8(i.to_vec())
                     .unwrap()
@@ -939,8 +833,8 @@ macro_rules! impl_to_string {
                 let digits_len = self.digits.len();
                 let mut x: String = self.digits.iter().enumerate().map(|(i, digit)| {
                     let mut s = digit.to_string();
-                    if s.len() < BASE_POW && i != digits_len - 1 {
-                        let diff = BASE_POW - s.len();
+                    if s.len() < BASE_LEN && i != digits_len - 1 {
+                        let diff = BASE_LEN - s.len();
                         s.insert_str(0, &"0".repeat(diff));
                     }
                     s
