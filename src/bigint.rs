@@ -99,10 +99,6 @@ impl BigInt {
         self.digits.get_mut(index)
     }
 
-    pub fn digit_count(&self) -> usize {
-        self.digits.len()
-    }
-
     pub fn digits(&self) -> &Vec<Digit> {
         self.digits.as_ref()
     }
@@ -173,8 +169,8 @@ fn _add(lhs: &[Digit], rhs: &[Digit]) -> Vec<Digit> {
 
     while i < max {
         let a = unsafe { *max_ref.get_unchecked(i) + carry };
-        res.push(a % 10);
-        carry = a / 10;
+        res.push(a % BASE);
+        carry = a / BASE;
         i += 1;
     }
 
@@ -513,6 +509,12 @@ fn mul(lhs: &[Digit], rhs: &[Digit]) -> Vec<Digit> {
 impl From<&'static str> for BigInt {
     fn from(value: &'static str) -> Self {
         BigInt::from(value.to_string())
+    }
+}
+
+impl From<Vec<u8>> for BigInt {
+    fn from(value: Vec<u8>) -> Self {
+        BigInt::from(String::from_utf8(value).unwrap())
     }
 }
 
@@ -934,13 +936,14 @@ macro_rules! impl_to_string {
     ($($t:ty)+) => ($(
         impl ToString for $t {
             fn to_string(&self) -> String {
-                let mut x: String = self.digits.iter().map(|i| {
-                    let s = i.to_string();
-                    if s == "0".to_string() {
-                        s.repeat(BASE_POW)
-                    } else {
-                        s
+                let digits_len = self.digits.len();
+                let mut x: String = self.digits.iter().enumerate().map(|(i, digit)| {
+                    let mut s = digit.to_string();
+                    if s.len() < BASE_POW && i != digits_len - 1 {
+                        let diff = BASE_POW - s.len();
+                        s.insert_str(0, &"0".repeat(diff));
                     }
+                    s
                 }).rev().collect();
                 if !self.positive {
                     x.insert(0, '-');
