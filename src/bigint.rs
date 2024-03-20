@@ -1,7 +1,7 @@
 use core::num::ParseIntError;
 use std::{
     cmp::Ordering,
-    ops::{Add, AddAssign, Mul, MulAssign, Shl, Shr, Sub},
+    ops::{Add, AddAssign, Mul, MulAssign, Shl, Shr, Sub, SubAssign},
 };
 
 type Digit = u32;
@@ -272,6 +272,23 @@ fn _mul(lhs: &[Digit], rhs: &[Digit]) -> Vec<Digit> {
     result
 }
 
+fn mul(lhs: &[Digit], rhs: &[Digit]) -> Vec<Digit> {
+    match (lhs, rhs) {
+        (&[], _) => return vec![0],
+        (_, &[]) => return vec![0],
+        (&[0], _) => return vec![0],
+        (_, &[0]) => return vec![0],
+        (x, y) => {
+            // return if cmp::min(x.len(), y.len()) > 32 {
+            //     // _mul_t3(x, y).digits
+            //     panic!();
+            // } else {
+            _mul(x, y)
+            // };
+        }
+    }
+}
+
 // fn _mul_t3(lhs: &[u8], rhs: &[u8]) -> BigInt {
 //     let max = if let Ordering::Greater = _len_cmp(lhs, rhs) {
 //         lhs
@@ -310,23 +327,6 @@ fn _mul(lhs: &[Digit], rhs: &[Digit]) -> Vec<Digit> {
 
 //     res
 // }
-
-fn mul(lhs: &[Digit], rhs: &[Digit]) -> Vec<Digit> {
-    match (lhs, rhs) {
-        (&[], _) => return vec![0],
-        (_, &[]) => return vec![0],
-        (&[0], _) => return vec![0],
-        (_, &[0]) => return vec![0],
-        (x, y) => {
-            // return if cmp::min(x.len(), y.len()) > 32 {
-            //     // _mul_t3(x, y).digits
-            //     panic!();
-            // } else {
-            _mul(x, y)
-            // };
-        }
-    }
-}
 
 // #[inline]
 // fn _t3_eval<'a>(num: &'a [u8], div: usize) -> (BigInt, BigInt, BigInt, BigInt, BigInt) {
@@ -400,8 +400,31 @@ fn mul(lhs: &[Digit], rhs: &[Digit]) -> Vec<Digit> {
 //     result
 // }
 
-impl From<&'static str> for BigInt {
-    fn from(value: &'static str) -> Self {
+// fn _div(lhs: &[Digit], rhs: &[Digit]) -> Vec<u8> {
+//     let mut res = Vec::with_capacity(lhs.len() - rhs.len());
+
+//     let (mut i, mut j) = (lhs.len() - rhs.len(), lhs.len());
+//     let rhs = BigInt::from(rhs);
+
+//     loop {
+//         let u = BigInt::from(&lhs[i..j]);
+//         let mut x = 1;
+//         loop {
+//             if x
+//         }
+//     }
+
+//     res
+// }
+
+impl<'a> From<&'a str> for BigInt {
+    fn from(value: &'a str) -> Self {
+        BigInt::from(value.to_string())
+    }
+}
+
+impl From<&String> for BigInt {
+    fn from(value: &String) -> Self {
         BigInt::from(value.to_string())
     }
 }
@@ -413,65 +436,63 @@ impl From<Vec<u8>> for BigInt {
 }
 
 impl From<String> for BigInt {
-    fn from(value: String) -> Self {
-        let mut bytes: Vec<u8> = value.into();
-        bytes.retain(|i| *i <= b'9' && *i >= b'0' || *i == b'-');
+    fn from(mut value: String) -> Self {
+        value.retain(|i| i <= '9' && i >= '0' || i == '-');
 
-        let positive = bytes[0] != b'-';
-
+        let positive = value.as_bytes()[0] != b'-';
         if !positive {
-            bytes.remove(0);
+            value.remove(0);
         }
 
-        let rem_len = bytes.len() % BASE_LEN;
+        let rem_len = value.len() % BASE_LEN;
         let mut rem: Digit = 0;
         if rem_len > 0 {
-            let mut _rem: Vec<u8> = vec![0; rem_len];
-            for i in 0..rem_len {
-                _rem[i] = bytes.remove(0);
-            }
-            rem = String::from_utf8(_rem).unwrap().parse().unwrap();
+            rem = value.drain(0..rem_len).collect::<String>().parse().unwrap();
         }
 
-        let mut bytes: Vec<Digit> = bytes
+        let mut digits: Vec<Digit> = value
+            .as_bytes()
             .chunks(BASE_LEN)
-            .map(|i| {
-                String::from_utf8(i.to_vec())
-                    .unwrap()
-                    .parse::<Digit>()
-                    .unwrap()
-            })
+            .map(|i| unsafe { String::from_utf8_unchecked(i.to_vec()).parse().unwrap() })
             .collect();
 
-        bytes.reverse();
+        digits.reverse();
 
         if rem_len != 0 {
-            bytes.push(rem);
+            digits.push(rem);
         }
 
-        Self {
-            digits: bytes,
-            positive,
-        }
+        Self { digits, positive }
+    }
+}
+
+impl From<&[u32]> for BigInt {
+    fn from(value: &[u32]) -> Self {
+        BigInt::from(value.to_vec())
+    }
+}
+
+impl From<Vec<u32>> for BigInt {
+    fn from(value: Vec<u32>) -> Self {
+        BigInt::new(value, true)
     }
 }
 
 pub trait ToBigInt {
-    fn to_bigint(&self) -> BigInt;
+    fn to_bigint(self) -> BigInt;
 }
 
 macro_rules! impl_to_bigint {
     ($($t:ty)+) => ($(
         impl ToBigInt for $t {
-            fn to_bigint(&self) -> BigInt {
-                BigInt::from(*self)
+            fn to_bigint(self) -> BigInt {
+                BigInt::from(self)
             }
         }
     )+)
 }
 
-impl_to_bigint! { usize u8 u16 u32 u64 u128 isize i8 i16 i32 i64 i128 }
-impl_to_bigint! { &usize &u8 &u16 &u32 &u64 &u128 &isize &i8 &i16 &i32 &i64 &i128 }
+impl_to_bigint! { usize u8 u16 u32 u64 u128 isize i8 i16 i32 i64 i128 String &str }
 
 macro_rules! impl_from_int {
     ($($t:ty)+) => ($(
@@ -504,7 +525,7 @@ macro_rules! impl_shl {
 }
 
 macro_rules! impl_shl_ref {
-    ($t1:ty, $t2:ty) => {
+    ($t2:ty, $($t1:ty)+) => {$(
         impl Shl<$t1> for $t2 {
             type Output = BigInt;
 
@@ -516,34 +537,12 @@ macro_rules! impl_shl_ref {
                 x
             }
         }
-    };
+    )+};
 }
 
 impl_shl! { usize u8 u16 u32 u64 u128 isize i8 i16 i32 i64 i128 }
-impl_shl_ref!(usize, &BigInt);
-impl_shl_ref!(u8, &BigInt);
-impl_shl_ref!(u16, &BigInt);
-impl_shl_ref!(u32, &BigInt);
-impl_shl_ref!(u64, &BigInt);
-impl_shl_ref!(u128, &BigInt);
-impl_shl_ref!(isize, &BigInt);
-impl_shl_ref!(i8, &BigInt);
-impl_shl_ref!(i16, &BigInt);
-impl_shl_ref!(i32, &BigInt);
-impl_shl_ref!(i64, &BigInt);
-impl_shl_ref!(i128, &BigInt);
-impl_shl_ref!(usize, &mut BigInt);
-impl_shl_ref!(u8, &mut BigInt);
-impl_shl_ref!(u16, &mut BigInt);
-impl_shl_ref!(u32, &mut BigInt);
-impl_shl_ref!(u64, &mut BigInt);
-impl_shl_ref!(u128, &mut BigInt);
-impl_shl_ref!(isize, &mut BigInt);
-impl_shl_ref!(i8, &mut BigInt);
-impl_shl_ref!(i16, &mut BigInt);
-impl_shl_ref!(i32, &mut BigInt);
-impl_shl_ref!(i64, &mut BigInt);
-impl_shl_ref!(i128, &mut BigInt);
+impl_shl_ref! { &BigInt, usize u8 u16 u32 u64 u128 isize i8 i16 i32 i64 i128 }
+impl_shl_ref! { &mut BigInt, usize u8 u16 u32 u64 u128 isize i8 i16 i32 i64 i128 }
 
 macro_rules! impl_shr {
     ($($t:ty)+) => ($(
@@ -561,7 +560,7 @@ macro_rules! impl_shr {
 }
 
 macro_rules! impl_shr_ref {
-    ($t1:ty, $t2:ty) => {
+    ($t2:ty, $($t1:ty)+) => {$(
         impl Shr<$t1> for $t2 {
             type Output = BigInt;
 
@@ -573,34 +572,12 @@ macro_rules! impl_shr_ref {
                 x
             }
         }
-    };
+    )+};
 }
 
 impl_shr! { usize u8 u16 u32 u64 u128 isize i8 i16 i32 i64 i128 }
-impl_shr_ref!(usize, &BigInt);
-impl_shr_ref!(u8, &BigInt);
-impl_shr_ref!(u16, &BigInt);
-impl_shr_ref!(u32, &BigInt);
-impl_shr_ref!(u64, &BigInt);
-impl_shr_ref!(u128, &BigInt);
-impl_shr_ref!(isize, &BigInt);
-impl_shr_ref!(i8, &BigInt);
-impl_shr_ref!(i16, &BigInt);
-impl_shr_ref!(i32, &BigInt);
-impl_shr_ref!(i64, &BigInt);
-impl_shr_ref!(i128, &BigInt);
-impl_shr_ref!(usize, &mut BigInt);
-impl_shr_ref!(u8, &mut BigInt);
-impl_shr_ref!(u16, &mut BigInt);
-impl_shr_ref!(u32, &mut BigInt);
-impl_shr_ref!(u64, &mut BigInt);
-impl_shr_ref!(u128, &mut BigInt);
-impl_shr_ref!(isize, &mut BigInt);
-impl_shr_ref!(i8, &mut BigInt);
-impl_shr_ref!(i16, &mut BigInt);
-impl_shr_ref!(i32, &mut BigInt);
-impl_shr_ref!(i64, &mut BigInt);
-impl_shr_ref!(i128, &mut BigInt);
+impl_shr_ref! { &BigInt, usize u8 u16 u32 u64 u128 isize i8 i16 i32 i64 i128 }
+impl_shr_ref! { &mut BigInt, usize u8 u16 u32 u64 u128 isize i8 i16 i32 i64 i128 }
 
 #[macro_export]
 macro_rules! bigint {
@@ -644,6 +621,34 @@ impl_sub!(&BigInt, &mut BigInt);
 impl_sub!(&mut BigInt, &BigInt);
 impl_sub!(&mut BigInt, &mut BigInt);
 
+macro_rules! impl_sub_assign {
+    ($t2:ty, $($t1:ty)+) => {$(
+        impl SubAssign<$t1> for $t2 {
+            fn sub_assign(&mut self, rhs: $t1) {
+                *self = self.sub(rhs);
+            }
+        }
+    )+};
+}
+
+impl_sub_assign!(BigInt, BigInt &BigInt &mut BigInt usize u8 u16 u32 u64 u128 isize i8 i16 i32 i64 i128);
+
+macro_rules! impl_sub_int {
+    ($t2:ty, $($t1:ty)+) => {$(
+        impl Sub<$t1> for $t2 {
+            type Output = BigInt;
+
+            fn sub(self, rhs: $t1) -> Self::Output {
+                self.sub(BigInt::from(rhs))
+            }
+        }
+    )+};
+}
+
+impl_sub_int! { BigInt, usize u8 u16 u32 u64 u128 isize i8 i16 i32 i64 i128 }
+impl_sub_int! { &BigInt, usize u8 u16 u32 u64 u128 isize i8 i16 i32 i64 i128 }
+impl_sub_int! { &mut BigInt, usize u8 u16 u32 u64 u128 isize i8 i16 i32 i64 i128 }
+
 impl AsRef<BigInt> for BigInt {
     fn as_ref(&self) -> &BigInt {
         self
@@ -686,18 +691,32 @@ impl_add!(&mut BigInt, &BigInt);
 impl_add!(&mut BigInt, &mut BigInt);
 
 macro_rules! impl_add_assign {
-    ($t1:ty, $t2:ty) => {
+    ($t2:ty, $($t1:ty)+) => {$(
         impl AddAssign<$t1> for $t2 {
             fn add_assign(&mut self, rhs: $t1) {
                 *self = self.add(rhs);
             }
         }
-    };
+    )+};
 }
 
-impl_add_assign!(BigInt, BigInt);
-impl_add_assign!(&BigInt, BigInt);
-impl_add_assign!(&mut BigInt, BigInt);
+impl_add_assign!(BigInt, BigInt &BigInt &mut BigInt usize u8 u16 u32 u64 u128 isize i8 i16 i32 i64 i128);
+
+macro_rules! impl_add_int {
+    ($t2:ty, $($t1:ty)+) => {$(
+        impl Add<$t1> for $t2 {
+            type Output = BigInt;
+
+            fn add(self, rhs: $t1) -> Self::Output {
+                self.add(BigInt::from(rhs))
+            }
+        }
+    )+};
+}
+
+impl_add_int! { BigInt, usize u8 u16 u32 u64 u128 isize i8 i16 i32 i64 i128 }
+impl_add_int! { &BigInt, usize u8 u16 u32 u64 u128 isize i8 i16 i32 i64 i128 }
+impl_add_int! { &mut BigInt, usize u8 u16 u32 u64 u128 isize i8 i16 i32 i64 i128 }
 
 macro_rules! impl_mul {
     ($t1:ty, $t2:ty) => {
@@ -728,18 +747,32 @@ impl_mul!(&mut BigInt, &BigInt);
 impl_mul!(&mut BigInt, &mut BigInt);
 
 macro_rules! impl_mul_assign {
-    ($t1:ty, $t2:ty) => {
+    ($t2:ty, $($t1:ty)+) => {$(
         impl MulAssign<$t1> for $t2 {
             fn mul_assign(&mut self, rhs: $t1) {
-                *self = self.clone().mul(rhs);
+                *self = self.mul(rhs);
             }
         }
-    };
+    )+};
 }
 
-impl_mul_assign!(BigInt, BigInt);
-impl_mul_assign!(&BigInt, BigInt);
-impl_mul_assign!(&mut BigInt, BigInt);
+impl_mul_assign!(BigInt, BigInt &BigInt &mut BigInt usize u8 u16 u32 u64 u128 isize i8 i16 i32 i64 i128);
+
+macro_rules! impl_mul_int {
+    ($t2:ty, $($t1:ty)+) => {$(
+        impl Mul<$t1> for $t2 {
+            type Output = BigInt;
+
+            fn mul(self, rhs: $t1) -> Self::Output {
+                self.mul(BigInt::from(rhs))
+            }
+        }
+    )+};
+}
+
+impl_mul_int! { BigInt, usize u8 u16 u32 u64 u128 isize i8 i16 i32 i64 i128 }
+impl_mul_int! { &BigInt, usize u8 u16 u32 u64 u128 isize i8 i16 i32 i64 i128 }
+impl_mul_int! { &mut BigInt, usize u8 u16 u32 u64 u128 isize i8 i16 i32 i64 i128 }
 
 impl PartialOrd for BigInt {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
@@ -776,7 +809,7 @@ impl Clone for BigInt {
 }
 
 macro_rules! impl_try_into_int {
-    ($t1:ty, $t2:ty) => {
+    ($t2:ty, $($t1:ty)+) => {$(
         impl TryInto<$t1> for $t2 {
             type Error = ParseIntError;
 
@@ -786,45 +819,12 @@ macro_rules! impl_try_into_int {
                 Ok(n)
             }
         }
-    };
+    )+};
 }
 
-impl_try_into_int!(usize, BigInt);
-impl_try_into_int!(u8, BigInt);
-impl_try_into_int!(u16, BigInt);
-impl_try_into_int!(u32, BigInt);
-impl_try_into_int!(u64, BigInt);
-impl_try_into_int!(u128, BigInt);
-impl_try_into_int!(isize, BigInt);
-impl_try_into_int!(i8, BigInt);
-impl_try_into_int!(i16, BigInt);
-impl_try_into_int!(i32, BigInt);
-impl_try_into_int!(i64, BigInt);
-impl_try_into_int!(i128, BigInt);
-impl_try_into_int!(usize, &BigInt);
-impl_try_into_int!(u8, &BigInt);
-impl_try_into_int!(u16, &BigInt);
-impl_try_into_int!(u32, &BigInt);
-impl_try_into_int!(u64, &BigInt);
-impl_try_into_int!(u128, &BigInt);
-impl_try_into_int!(isize, &BigInt);
-impl_try_into_int!(i8, &BigInt);
-impl_try_into_int!(i16, &BigInt);
-impl_try_into_int!(i32, &BigInt);
-impl_try_into_int!(i64, &BigInt);
-impl_try_into_int!(i128, &BigInt);
-impl_try_into_int!(usize, &mut BigInt);
-impl_try_into_int!(u8, &mut BigInt);
-impl_try_into_int!(u16, &mut BigInt);
-impl_try_into_int!(u32, &mut BigInt);
-impl_try_into_int!(u64, &mut BigInt);
-impl_try_into_int!(u128, &mut BigInt);
-impl_try_into_int!(isize, &mut BigInt);
-impl_try_into_int!(i8, &mut BigInt);
-impl_try_into_int!(i16, &mut BigInt);
-impl_try_into_int!(i32, &mut BigInt);
-impl_try_into_int!(i64, &mut BigInt);
-impl_try_into_int!(i128, &mut BigInt);
+impl_try_into_int! { BigInt, usize u8 u16 u32 u64 u128 isize i8 i16 i32 i64 i128 }
+impl_try_into_int! { &BigInt, usize u8 u16 u32 u64 u128 isize i8 i16 i32 i64 i128 }
+impl_try_into_int! { &mut BigInt, usize u8 u16 u32 u64 u128 isize i8 i16 i32 i64 i128 }
 
 macro_rules! impl_to_string {
     ($($t:ty)+) => ($(
