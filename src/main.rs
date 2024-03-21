@@ -2,10 +2,7 @@ use std::{thread::Builder, time::Instant};
 
 use ds_rs::bigint::BigInt;
 use ds_rs::bigint::ToBigInt;
-use ds_rs::{
-    matrix::{Matrix, MatrixVec},
-    PerfRelative,
-};
+use ds_rs::matrix::{Matrix, MatrixVec};
 use rand::Rng;
 
 fn main() {
@@ -167,4 +164,56 @@ fn matrix_add() {
         .unwrap()
         .join()
         .unwrap();
+}
+
+pub struct PerfRelative<'a> {
+    f1_name: &'a str,
+    f2_name: &'a str,
+}
+
+impl<'a> PerfRelative<'a> {
+    pub fn new(f1_name: &'a str, f2_name: &'a str) -> Self {
+        PerfRelative { f1_name, f2_name }
+    }
+    pub fn test<F1, F2>(&self, name: &str, iterations: usize, mut f1: F1, mut f2: F2)
+    where
+        F1: FnMut(),
+        F2: FnMut(),
+    {
+        let name1 = self.f1_name;
+        let name2 = self.f2_name;
+
+        let start_time1 = Instant::now();
+        for _ in 0..iterations {
+            f1();
+        }
+        let end_time1 = Instant::now();
+        let elapsed_time1 = end_time1 - start_time1;
+
+        let start_time2 = Instant::now();
+        for _ in 0..iterations {
+            f2();
+        }
+        let end_time2 = Instant::now();
+        let elapsed_time2 = end_time2 - start_time2;
+
+        let average_time_per_iteration1 = elapsed_time1 / iterations as u32;
+        let average_time_per_iteration2 = elapsed_time2 / iterations as u32;
+
+        println!("{} {} iters per iter:", name, iterations);
+        println!("    {}: {:?}", name1, average_time_per_iteration1);
+        println!("    {}: {:?}", name2, average_time_per_iteration2);
+
+        let speed_ratio = if elapsed_time1 < elapsed_time2 {
+            elapsed_time2.as_secs_f64() / elapsed_time1.as_secs_f64()
+        } else {
+            elapsed_time1.as_secs_f64() / elapsed_time2.as_secs_f64()
+        };
+
+        if elapsed_time1 < elapsed_time2 {
+            println!("    {} {:.2}x faster than {}", name1, speed_ratio, name2);
+        } else {
+            println!("    {} {:.2}x faster than {}", name2, speed_ratio, name1);
+        }
+    }
 }

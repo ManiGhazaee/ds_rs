@@ -1,7 +1,7 @@
 #![cfg(test)]
-use std::rc::Rc;
+use std::{cmp::Ordering, rc::Rc};
 
-use ds_rs::{binary_tree::BinaryTree, is_max_heap, is_min_heap};
+use ds_rs::binary_tree::{BinaryTree, Node};
 
 #[test]
 fn test_basic() {
@@ -294,4 +294,34 @@ fn test_into_vec() {
     // [0, 1, 3, None, 2, None, 4]
     let v = b.into_vec();
     assert_eq!(v, vec![0, 1, 3, 2, 4]);
+}
+
+pub fn is_heap_by<T, F>(vec: &[Node<T>], compare: F) -> bool
+where
+    F: Fn(&T, &T) -> Ordering,
+{
+    for i in (0..vec.len()).rev() {
+        let parent = if !vec[i].is_root() {
+            vec[i].parent()
+        } else {
+            continue;
+        };
+        let vals = if let (Some(val), Some(pval)) = (vec[i].val(), parent.val()) {
+            (val, pval)
+        } else {
+            continue;
+        };
+        if let Ordering::Less = compare(&*vals.0, &*vals.1) {
+            return false;
+        }
+    }
+    true
+}
+
+pub fn is_max_heap<T: PartialOrd>(vec: &Vec<Node<T>>) -> bool {
+    is_heap_by(&vec[..], |a, b| b.partial_cmp(a).unwrap())
+}
+
+pub fn is_min_heap<T: PartialOrd>(vec: &Vec<Node<T>>) -> bool {
+    is_heap_by(&vec[..], |a, b| a.partial_cmp(b).unwrap())
 }

@@ -199,19 +199,3 @@ fn test_big_const() {
     assert_eq!(sub.to_string(), sub_e);
     assert_eq!(sub, BigInt::from(sub_e));
 }
-
-/// t1: len type
-/// t2: element type
-#[macro_export]
-macro_rules! random_vec {
-    ($t1:ty, $t2:ty) => {{
-        type T = $t2;
-        let mut rng = rand::thread_rng();
-        let len: $t1 = rng.gen();
-        let mut v: Vec<T> = vec![T::default(); len as usize];
-        for i in v.iter_mut() {
-            *i = rng.gen();
-        }
-        v
-    }};
-}
