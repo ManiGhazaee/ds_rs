@@ -4,6 +4,7 @@ pub mod graph;
 pub mod linked_list;
 pub mod matrix;
 pub mod queue;
+pub mod stack;
 
 /// t1: len,
 /// t2: element

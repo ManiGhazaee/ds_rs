@@ -1,78 +1,74 @@
-use std::fmt::Debug;
+use std::array;
 
-pub struct Queue<T> {
-    vec: Vec<Option<T>>,
+pub struct Queue<T, const L: usize> {
+    arr: [T; L],
+    front: usize,
+    back: usize,
     size: usize,
-    capacity: usize,
 }
 
-impl<T: Clone> Queue<T> {
-    pub fn new(capacity: usize) -> Self {
-        assert!(capacity > 0);
+impl<T: Clone + Default, const L: usize> Queue<T, L> {
+    pub fn new() -> Self {
         Queue {
-            vec: vec![None; capacity],
+            arr: array::from_fn(|_| T::default()),
+            front: L,
+            back: L,
             size: 0,
-            capacity,
         }
     }
     pub fn is_empty(&self) -> bool {
-        self.size == 0
+        self.front == L
     }
     pub fn is_full(&self) -> bool {
-        self.size == self.capacity
+        self.size == L
     }
     pub fn size(&self) -> usize {
         self.size
     }
     pub fn capacity(&self) -> usize {
-        self.capacity
+        L
     }
-    pub fn enq(&mut self, val: T) -> Result<(), ()> {
-        if !self.is_full() {
-            self.vec.insert(0, Some(val));
-            self.size += 1;
-            Ok(())
-        } else {
-            Err(())
+    /// # Panics
+    /// if array is full
+    pub fn enq(&mut self, val: T) {
+        if self.is_full() {
+            panic!("Queue is full");
         }
-    }
-    pub fn deq(&mut self) -> Result<(), ()> {
-        if !self.is_empty() {
-            self.vec[self.size - 1] = None;
-            self.size -= 1;
-            Ok(())
+        self.size += 1;
+        if self.is_empty() {
+            self.front -= 1;
+            self.back -= 1;
+        } else if self.front == 0 {
+            self.front = L - 1;
         } else {
-            Err(())
+            self.front -= 1;
         }
+        self.arr[self.front] = val;
     }
-    pub fn deq_all(&mut self) {
-        self.vec = vec![None; self.capacity];
+    /// # Panics
+    /// if array is empty
+    pub fn deq(&mut self) -> T {
+        if self.is_empty() {
+            panic!("Queue is empty");
+        }
+        self.size -= 1;
+        let ret = self.arr[self.back].clone();
+        if self.back == 0 {
+            self.back = L - 1;
+        } else {
+            self.back -= 1;
+        }
+        ret
+    }
+    pub fn clear(&mut self) {
         self.size = 0;
+        self.front = L;
+        self.back = L;
     }
-    pub fn tail(&self) -> Option<&T> {
-        if !self.is_empty() {
-            self.vec[self.size - 1].as_ref()
-        } else {
-            None
-        }
+    pub fn back(&self) -> Option<&T> {
+        self.arr.get(self.back)
     }
-    pub fn head(&self) -> Option<&T> {
-        self.vec[0].as_ref()
-    }
-}
-
-impl<T: Debug> Debug for Queue<T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for (idx, val) in self.vec.iter().enumerate() {
-            if let Some(val) = val {
-                let w = writeln!(f, "{}: {:?}", idx, val);
-                if let Err(e) = w {
-                    return Err(e);
-                }
-            } else {
-                break;
-            }
-        }
-        Ok(())
+    pub fn front(&self) -> Option<&T> {
+        self.arr.get(self.front)
     }
 }
