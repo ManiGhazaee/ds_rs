@@ -3,6 +3,7 @@
 use std::env;
 
 use ds_rs::bigint;
+use ds_rs::bigint::ToBigInt;
 // use ds_rs::bigint::div_by_three;
 // use ds_rs::bigint::div_by_two;
 use ds_rs::bigint::BigInt;
@@ -198,4 +199,22 @@ fn test_big_const() {
 
     assert_eq!(sub.to_string(), sub_e);
     assert_eq!(sub, BigInt::from(sub_e));
+}
+
+#[test]
+fn test_div() {
+    assert_eq!(bigint!(10) / bigint!(2), bigint!(5));
+    assert_eq!(bigint!(100) / bigint!(20), bigint!(5));
+    assert_eq!(bigint!(1000) / bigint!(200), bigint!(5));
+
+    assert_eq!(bigint!(-10) / bigint!(2), bigint!(-5));
+    assert_eq!(bigint!(-100) / bigint!(20), bigint!(-5));
+    assert_eq!(bigint!(-1000) / bigint!(200), bigint!(-5));
+
+    assert_eq!(bigint!(0) / bigint!(10), bigint!(0));
+
+    let dividend = bigint!(987654321);
+    let divisor = bigint!(123);
+    let expected_quotient = (987654321 / 123).to_bigint();
+    assert_eq!(dividend / &divisor, expected_quotient);
 }

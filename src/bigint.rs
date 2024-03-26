@@ -1,7 +1,7 @@
 use core::num::ParseIntError;
 use std::{
     cmp::Ordering,
-    ops::{Add, AddAssign, Mul, MulAssign, Shl, Shr, Sub, SubAssign},
+    ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Shl, Shr, Sub, SubAssign},
 };
 
 type Digit = u32;
@@ -48,20 +48,6 @@ impl BigInt {
         }
     }
 
-    pub fn two() -> Self {
-        Self {
-            digits: vec![2],
-            positive: true,
-        }
-    }
-
-    pub fn three() -> Self {
-        Self {
-            digits: vec![3],
-            positive: true,
-        }
-    }
-
     pub fn pow(self, exp: usize) -> Self {
         let mut res = BigInt::one();
         for _ in 0..exp {
@@ -101,6 +87,14 @@ impl BigInt {
 
     pub fn digits(&self) -> &Vec<Digit> {
         self.digits.as_ref()
+    }
+
+    pub fn abs(&self) -> Self {
+        BigInt::new(self.digits.clone(), true)
+    }
+
+    pub(crate) fn is_zero(&self) -> bool {
+        self.digits.len() == 1 && self.digits[0] == 0
     }
 
     // pub(super) fn div_by_three(&self) -> Self {
@@ -774,6 +768,85 @@ impl_mul_int! { BigInt, usize u8 u16 u32 u64 u128 isize i8 i16 i32 i64 i128 }
 impl_mul_int! { &BigInt, usize u8 u16 u32 u64 u128 isize i8 i16 i32 i64 i128 }
 impl_mul_int! { &mut BigInt, usize u8 u16 u32 u64 u128 isize i8 i16 i32 i64 i128 }
 
+macro_rules! impl_div {
+    ($t1:ty, $t2:ty) => {
+        impl Div<$t1> for $t2 {
+            type Output = BigInt;
+
+            fn div(self, divisor: $t1) -> Self::Output {
+                if divisor.is_zero() {
+                    panic!("Division by zero");
+                }
+
+                if self.is_zero() {
+                    return BigInt::zero();
+                }
+
+                let mut quotient = BigInt::zero();
+                let mut remainder = self.abs();
+                let divisor_abs = divisor.abs();
+
+                while remainder >= divisor_abs {
+                    let mut multiple = BigInt::one();
+                    let mut product = divisor_abs.clone();
+
+                    while &product <= &remainder {
+                        product += &divisor_abs;
+                        multiple += &BigInt::one();
+                    }
+
+                    remainder -= &product - &divisor_abs;
+                    quotient += multiple - &BigInt::one();
+                }
+
+                if (self.positive && divisor.positive) || (!self.positive && !divisor.positive) {
+                    quotient
+                } else {
+                    -quotient
+                }
+            }
+        }
+    };
+}
+
+impl_div!(BigInt, BigInt);
+impl_div!(BigInt, &BigInt);
+impl_div!(&BigInt, BigInt);
+impl_div!(&BigInt, &BigInt);
+impl_div!(&mut BigInt, BigInt);
+impl_div!(BigInt, &mut BigInt);
+impl_div!(&BigInt, &mut BigInt);
+impl_div!(&mut BigInt, &BigInt);
+impl_div!(&mut BigInt, &mut BigInt);
+
+macro_rules! impl_div_assign {
+    ($t2:ty, $($t1:ty)+) => {$(
+        impl DivAssign<$t1> for $t2 {
+            fn div_assign(&mut self, rhs: $t1) {
+                *self = self.div(rhs);
+            }
+        }
+    )+};
+}
+
+impl_div_assign!(BigInt, BigInt &BigInt &mut BigInt usize u8 u16 u32 u64 u128 isize i8 i16 i32 i64 i128);
+
+macro_rules! impl_div_int {
+    ($t2:ty, $($t1:ty)+) => {$(
+        impl Div<$t1> for $t2 {
+            type Output = BigInt;
+
+            fn div(self, rhs: $t1) -> Self::Output {
+                self.div(BigInt::from(rhs))
+            }
+        }
+    )+};
+}
+
+impl_div_int! { BigInt, usize u8 u16 u32 u64 u128 isize i8 i16 i32 i64 i128 }
+impl_div_int! { &BigInt, usize u8 u16 u32 u64 u128 isize i8 i16 i32 i64 i128 }
+impl_div_int! { &mut BigInt, usize u8 u16 u32 u64 u128 isize i8 i16 i32 i64 i128 }
+
 impl PartialOrd for BigInt {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
@@ -798,6 +871,14 @@ impl Ord for BigInt {
 }
 
 impl Eq for BigInt {}
+
+impl Neg for BigInt {
+    type Output = BigInt;
+
+    fn neg(self) -> Self::Output {
+        BigInt::new(self.digits, !self.positive)
+    }
+}
 
 impl Clone for BigInt {
     fn clone(&self) -> Self {

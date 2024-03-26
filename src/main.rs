@@ -1,20 +1,23 @@
 use std::{thread::Builder, time::Instant};
 
-use ds_rs::bigint::BigInt;
+// use ds_rs::bigint;
+// use ds_rs::bigint::BigInt;
 use ds_rs::bigint::ToBigInt;
 use ds_rs::matrix::{Matrix, MatrixVec};
 use rand::Rng;
 
 fn main() {
+    let x: usize = 213000214241;
+    let y: usize = 999210;
+
+    let e = x / y;
     let inst = Instant::now();
-    let mut i = BigInt::one();
-    let mut res = BigInt::one();
-    while i <= 10000.to_bigint() {
-        res *= &i;
-        i += BigInt::one();
-    }
-    dbg!(inst.elapsed());
-    dbg!(res.to_string().len());
+    let i = x.to_bigint() / y.to_bigint();
+    let e1 = inst.elapsed();
+
+    assert_eq!(e.to_string(), i.to_string());
+
+    dbg!(e1);
 }
 
 #[allow(dead_code)]
