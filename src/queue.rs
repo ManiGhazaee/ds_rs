@@ -1,9 +1,10 @@
 use std::array;
 
+#[derive(Debug)]
 pub struct Queue<T, const L: usize> {
     arr: [T; L],
-    front: usize,
     back: usize,
+    front: usize,
     size: usize,
 }
 
@@ -11,13 +12,13 @@ impl<T: Clone + Default, const L: usize> Queue<T, L> {
     pub fn new() -> Self {
         Queue {
             arr: array::from_fn(|_| T::default()),
-            front: L,
             back: L,
+            front: L,
             size: 0,
         }
     }
     pub fn is_empty(&self) -> bool {
-        self.front == L
+        self.size == 0
     }
     pub fn is_full(&self) -> bool {
         self.size == L
@@ -35,15 +36,15 @@ impl<T: Clone + Default, const L: usize> Queue<T, L> {
             panic!("Queue is full");
         }
         self.size += 1;
-        if self.is_empty() {
-            self.front -= 1;
+        if self.size == 1 {
             self.back -= 1;
-        } else if self.front == 0 {
-            self.front = L - 1;
-        } else {
             self.front -= 1;
+        } else if self.back == 0 {
+            self.back = L - 1;
+        } else {
+            self.back -= 1;
         }
-        self.arr[self.front] = val;
+        self.arr[self.back] = val;
     }
     /// # Panics
     /// if array is empty
@@ -51,24 +52,29 @@ impl<T: Clone + Default, const L: usize> Queue<T, L> {
         if self.is_empty() {
             panic!("Queue is empty");
         }
+        let ret = self.arr[self.front].clone();
         self.size -= 1;
-        let ret = self.arr[self.back].clone();
-        if self.back == 0 {
-            self.back = L - 1;
+        if self.size == 0 {
+            self.front = L;
+            self.back = L;
         } else {
-            self.back -= 1;
+            if self.front == 0 {
+                self.front = L - 1;
+            } else {
+                self.front -= 1;
+            }
         }
         ret
     }
     pub fn clear(&mut self) {
         self.size = 0;
-        self.front = L;
         self.back = L;
-    }
-    pub fn back(&self) -> Option<&T> {
-        self.arr.get(self.back)
+        self.front = L;
     }
     pub fn front(&self) -> Option<&T> {
         self.arr.get(self.front)
+    }
+    pub fn back(&self) -> Option<&T> {
+        self.arr.get(self.back)
     }
 }

@@ -57,3 +57,55 @@
 //     assert_eq!(q.tail(), None);
 //     assert_eq!(q.head(), None);
 // }
+
+use ds_rs::queue::Queue;
+
+#[test]
+fn test_queue_operations() {
+    let mut queue: Queue<i32, 5> = Queue::new();
+
+    assert!(queue.is_empty());
+
+    queue.enq(1);
+    queue.enq(2);
+    queue.enq(3);
+    assert_eq!(queue.deq(), 1);
+    assert_eq!(queue.deq(), 2);
+    assert_eq!(queue.deq(), 3);
+    assert!(queue.is_empty());
+
+    for i in 0..5 {
+        queue.enq(i);
+    }
+    assert!(queue.is_full());
+
+    for i in 0..3 {
+        assert_eq!(queue.deq(), i);
+    }
+    assert!(!queue.is_empty());
+    dbg!(&queue);
+
+    queue.enq(5);
+    queue.enq(6);
+    dbg!(&queue);
+    assert_eq!(queue.deq(), 3);
+    assert_eq!(queue.deq(), 4);
+    assert_eq!(queue.deq(), 5);
+    assert_eq!(queue.deq(), 6);
+    assert!(queue.is_empty());
+    dbg!(&queue);
+
+    for i in 0..5 {
+        queue.enq(i);
+    }
+    queue.clear();
+    assert!(queue.is_empty());
+
+    assert_eq!(queue.front(), None);
+    assert_eq!(queue.back(), None);
+
+    queue.enq(10);
+    queue.enq(20);
+    assert_eq!(queue.front(), Some(&10));
+    assert_eq!(queue.back(), Some(&20));
+}
