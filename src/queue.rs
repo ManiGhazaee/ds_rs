@@ -77,4 +77,136 @@ impl<T: Clone + Default, const L: usize> Queue<T, L> {
     pub fn back(&self) -> Option<&T> {
         self.arr.get(self.back)
     }
+    pub fn iter<'a>(&'a self) -> Iter<'a, T, L> {
+        Iter {
+            arr: &self.arr,
+            index: self.front,
+            size: self.size,
+        }
+    }
+    pub fn iter_mut<'a>(&'a mut self) -> IterMut<'a, T, L> {
+        IterMut {
+            arr: &mut self.arr,
+            index: self.front,
+            size: self.size,
+        }
+    }
+}
+
+pub struct Iter<'a, T, const L: usize> {
+    arr: &'a [T; L],
+    index: usize,
+    size: usize,
+}
+
+impl<'a, T, const L: usize> Iterator for Iter<'a, T, L> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.size == 0 {
+            return None;
+        }
+        let ret = &self.arr[self.index];
+        if self.index == 0 {
+            self.index = L - 1;
+        } else {
+            self.index -= 1;
+        };
+        self.size -= 1;
+
+        Some(ret)
+    }
+}
+
+pub struct IterMut<'a, T, const L: usize> {
+    arr: &'a mut [T; L],
+    index: usize,
+    size: usize,
+}
+
+impl<'a, T, const L: usize> Iterator for IterMut<'a, T, L> {
+    type Item = &'a mut T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.size == 0 {
+            return None;
+        }
+        let ret = &mut self.arr[self.index] as *mut T;
+        if self.index == 0 {
+            self.index = L - 1;
+        } else {
+            self.index -= 1;
+        };
+        self.size -= 1;
+
+        Some(unsafe { &mut *ret })
+    }
+}
+
+impl<'a, T, const L: usize> IntoIterator for &'a Queue<T, L>
+where
+    T: Clone + Default,
+{
+    type Item = &'a T;
+    type IntoIter = Iter<'a, T, L>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+impl<'a, T, const L: usize> IntoIterator for &'a mut Queue<T, L>
+where
+    T: Clone + Default,
+{
+    type Item = &'a mut T;
+    type IntoIter = IterMut<'a, T, L>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter_mut()
+    }
+}
+
+pub struct IntoIter<T, const L: usize> {
+    arr: [T; L],
+    index: usize,
+    size: usize,
+}
+
+impl<T, const L: usize> Iterator for IntoIter<T, L>
+where
+    T: Clone + Default,
+{
+    type Item = T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.size == 0 {
+            return None;
+        }
+        let ret = self.arr[self.index].clone();
+        if self.index == 0 {
+            self.index = L - 1;
+        } else {
+            self.index -= 1;
+        };
+        self.size -= 1;
+
+        Some(ret)
+    }
+}
+
+impl<T, const L: usize> IntoIterator for Queue<T, L>
+where
+    T: Clone + Default,
+{
+    type Item = T;
+    type IntoIter = IntoIter<T, L>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        IntoIter {
+            arr: self.arr,
+            index: self.front,
+            size: self.size,
+        }
+    }
 }

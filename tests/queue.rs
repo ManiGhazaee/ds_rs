@@ -109,3 +109,70 @@ fn test_queue_operations() {
     assert_eq!(queue.front(), Some(&10));
     assert_eq!(queue.back(), Some(&20));
 }
+
+#[test]
+fn test_iter() {
+    let q: Queue<i32, 10> = Queue::new();
+    let mut iter = q.iter();
+    assert_eq!(iter.next(), None);
+
+    let mut q: Queue<i32, 10> = Queue::new();
+    q.enq(1);
+    q.enq(2);
+    q.enq(3);
+    q.enq(4);
+    q.enq(5);
+    q.enq(6);
+    let mut iter = q.iter();
+    assert_eq!(iter.next(), Some(&1));
+    assert_eq!(iter.next(), Some(&2));
+    assert_eq!(iter.next(), Some(&3));
+    assert_eq!(iter.next(), Some(&4));
+    assert_eq!(iter.next(), Some(&5));
+    assert_eq!(iter.next(), Some(&6));
+    assert_eq!(iter.next(), None);
+    assert_eq!(iter.next(), None);
+}
+
+#[test]
+fn test_iter_mut() {
+    let mut q: Queue<i32, 10> = Queue::new();
+    q.enq(1);
+    q.enq(2);
+    q.enq(3);
+    q.enq(4);
+    q.enq(5);
+    q.enq(6);
+    for i in q.iter_mut() {
+        if *i % 2 == 0 {
+            *i = 0;
+        }
+    }
+    let mut iter = q.iter();
+    assert_eq!(iter.next(), Some(&1));
+    assert_eq!(iter.next(), Some(&0));
+    assert_eq!(iter.next(), Some(&3));
+    assert_eq!(iter.next(), Some(&0));
+    assert_eq!(iter.next(), Some(&5));
+    assert_eq!(iter.next(), Some(&0));
+    assert_eq!(iter.next(), None);
+}
+
+#[test]
+fn test_into_iter() {
+    let mut q: Queue<i32, 10> = Queue::new();
+    q.enq(1);
+    q.enq(2);
+    q.enq(3);
+    q.enq(4);
+    q.enq(5);
+    q.enq(6);
+    let mut x = q.into_iter().map(|i| if i % 2 == 0 { 0 } else { i });
+    assert_eq!(x.next(), Some(1));
+    assert_eq!(x.next(), Some(0));
+    assert_eq!(x.next(), Some(3));
+    assert_eq!(x.next(), Some(0));
+    assert_eq!(x.next(), Some(5));
+    assert_eq!(x.next(), Some(0));
+    assert_eq!(x.next(), None);
+}
