@@ -1,4 +1,8 @@
-use std::array;
+use std::{
+    array,
+    fmt::{Debug, Display},
+    mem,
+};
 
 #[derive(Debug)]
 pub struct Queue<T, const L: usize> {
@@ -8,7 +12,7 @@ pub struct Queue<T, const L: usize> {
     size: usize,
 }
 
-impl<T: Clone + Default, const L: usize> Queue<T, L> {
+impl<T: Default, const L: usize> Queue<T, L> {
     pub fn new() -> Self {
         Queue {
             arr: array::from_fn(|_| T::default()),
@@ -17,16 +21,16 @@ impl<T: Clone + Default, const L: usize> Queue<T, L> {
             size: 0,
         }
     }
-    pub fn is_empty(&self) -> bool {
+    pub const fn is_empty(&self) -> bool {
         self.size == 0
     }
-    pub fn is_full(&self) -> bool {
+    pub const fn is_full(&self) -> bool {
         self.size == L
     }
-    pub fn size(&self) -> usize {
+    pub const fn size(&self) -> usize {
         self.size
     }
-    pub fn capacity(&self) -> usize {
+    pub const fn capacity(&self) -> usize {
         L
     }
     /// # Panics
@@ -52,7 +56,7 @@ impl<T: Clone + Default, const L: usize> Queue<T, L> {
         if self.is_empty() {
             panic!("Queue is empty");
         }
-        let ret = self.arr[self.front].clone();
+        let ret = mem::take(&mut self.arr[self.front]);
         self.size -= 1;
         if self.size == 0 {
             self.front = L;
@@ -71,13 +75,14 @@ impl<T: Clone + Default, const L: usize> Queue<T, L> {
         self.back = L;
         self.front = L;
     }
-    pub fn front(&self) -> Option<&T> {
-        self.arr.get(self.front)
+    pub const fn front(&self) -> Option<&T> {
+        self.get(self.front)
     }
-    pub fn back(&self) -> Option<&T> {
-        self.arr.get(self.back)
+    pub const fn back(&self) -> Option<&T> {
+        self.get(self.back)
     }
-    pub fn iter<'a>(&'a self) -> Iter<'a, T, L> {
+    /// iterates from front to back
+    pub const fn iter<'a>(&'a self) -> Iter<'a, T, L> {
         Iter {
             arr: &self.arr,
             index: self.front,
@@ -89,6 +94,30 @@ impl<T: Clone + Default, const L: usize> Queue<T, L> {
             arr: &mut self.arr,
             index: self.front,
             size: self.size,
+        }
+    }
+    pub const fn get_from_front(&self, index: usize) -> Option<&T> {
+        let index = if index > self.front {
+            L - (index - self.front)
+        } else {
+            self.front - index
+        };
+        self.get(index)
+    }
+    pub const fn get_from_back(&self, index: usize) -> Option<&T> {
+        let d = L - self.back - 1;
+        let index = if index > d {
+            index - d
+        } else {
+            self.back + index
+        };
+        self.get(index)
+    }
+    const fn get(&self, index: usize) -> Option<&T> {
+        if index < L {
+            Some(&self.arr[index])
+        } else {
+            None
         }
     }
 }
@@ -145,7 +174,7 @@ impl<'a, T, const L: usize> Iterator for IterMut<'a, T, L> {
 
 impl<'a, T, const L: usize> IntoIterator for &'a Queue<T, L>
 where
-    T: Clone + Default,
+    T: Default,
 {
     type Item = &'a T;
     type IntoIter = Iter<'a, T, L>;
@@ -157,7 +186,7 @@ where
 
 impl<'a, T, const L: usize> IntoIterator for &'a mut Queue<T, L>
 where
-    T: Clone + Default,
+    T: Default,
 {
     type Item = &'a mut T;
     type IntoIter = IterMut<'a, T, L>;
@@ -175,7 +204,7 @@ pub struct IntoIter<T, const L: usize> {
 
 impl<T, const L: usize> Iterator for IntoIter<T, L>
 where
-    T: Clone + Default,
+    T: Default,
 {
     type Item = T;
 
@@ -183,7 +212,7 @@ where
         if self.size == 0 {
             return None;
         }
-        let ret = self.arr[self.index].clone();
+        let ret = mem::take(&mut self.arr[self.index]);
         if self.index == 0 {
             self.index = L - 1;
         } else {
@@ -197,7 +226,7 @@ where
 
 impl<T, const L: usize> IntoIterator for Queue<T, L>
 where
-    T: Clone + Default,
+    T: Default,
 {
     type Item = T;
     type IntoIter = IntoIter<T, L>;
@@ -208,5 +237,11 @@ where
             index: self.front,
             size: self.size,
         }
+    }
+}
+
+impl<T: Debug + Default, const L: usize> Display for Queue<T, L> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        return writeln!(f, "{:?}", self.iter().collect::<Vec<_>>());
     }
 }
