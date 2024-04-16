@@ -4,7 +4,7 @@ use std::{
     mem,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Queue<T, const L: usize> {
     arr: [T; L],
     back: usize,

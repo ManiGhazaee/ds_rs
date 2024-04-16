@@ -1,13 +1,24 @@
 use std::{thread::Builder, time::Instant};
 
-// use ds_rs::bigint;
-// use ds_rs::bigint::BigInt;
-use ds_rs::bigint::ToBigInt;
-use ds_rs::matrix::{Matrix, MatrixVec};
-use ds_rs::queue::Queue;
+use ds_rs::{
+    matrix::{Matrix, MatrixVec},
+    tree::{self, MutPtr, Node},
+};
 use rand::Rng;
 
-fn main() {}
+fn main() {
+    let mut t = tree::Tree::new(Node::new("root".to_string()));
+    let mut child1 = Node::new("child1".to_string());
+    let mut child2 = Node::new("child2".to_string());
+    t.root = t.root.with_children(vec![MutPtr::new(&mut child1)]);
+
+    unsafe {
+        dbg!(&t);
+        dbg!(t.root.get_child(0));
+        t.root.get_child_mut(0).unwrap().push_child(&mut child2);
+        dbg!(t.root.get_child(0).unwrap().get_child(0));
+    }
+}
 
 #[allow(dead_code)]
 fn linked_list() {

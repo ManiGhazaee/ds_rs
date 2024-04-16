@@ -18,7 +18,7 @@ fn test_push_full() {
     stack.push(1);
     stack.push(2);
     stack.push(3);
-    stack.push(4); // Stack is full, should panic
+    stack.push(4); 
 }
 
 #[test]
@@ -26,7 +26,7 @@ fn test_push_full() {
 fn test_pop_empty() {
     let mut stack = Stack::<i32, 3>::new();
     assert!(stack.is_empty());
-    assert_eq!(stack.pop(), 0); // Popping from an empty stack should return default value
+    stack.pop(); 
 }
 
 #[test]
