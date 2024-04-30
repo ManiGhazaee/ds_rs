@@ -1,28 +1,16 @@
-use std::{thread::Builder, time::Instant};
+use std::{env, thread::Builder, time::Instant};
 
-use ds_rs::{
-    matrix::{Matrix, MatrixVec},
-    tree::{self, MutPtr, Node},
-};
+use ds_rs::matrix::{Matrix, MatrixVec};
 use rand::Rng;
 
 fn main() {
-    let mut t = tree::Tree::new(Node::new("root".to_string()));
-    let mut child1 = Node::new("child1".to_string());
-    let mut child2 = Node::new("child2".to_string());
-    t.root = t.root.with_children(vec![MutPtr::new(&mut child1)]);
-
-    unsafe {
-        dbg!(&t);
-        dbg!(t.root.get_child(0));
-        t.root.get_child_mut(0).unwrap().push_child(&mut child2);
-        dbg!(t.root.get_child(0).unwrap().get_child(0));
-    }
+    env::set_var("RUST_BACKTRACE", "true");
+    linked_list();
 }
 
 #[allow(dead_code)]
 fn linked_list() {
-    let mut l1 = ds_rs::linked_list::LinkedList::new();
+    let mut l1 = ds_rs::linked_list::rawptr::LinkedList::new();
     let mut l2 = std::collections::linked_list::LinkedList::new();
     let perf = PerfRelative::new("ds_rs", "std");
 
@@ -70,29 +58,29 @@ fn linked_list() {
         },
     );
 
-    let mut iter1 = l1.iter();
-    let mut iter2 = l2.iter();
-    perf.test(
-        "iter",
-        900,
-        || {
-            iter1.next();
-        },
-        || {
-            iter2.next();
-        },
-    );
+    // let mut iter1 = l1.iter();
+    // let mut iter2 = l2.iter();
+    // perf.test(
+    //     "iter",
+    //     900,
+    //     || {
+    //         iter1.next();
+    //     },
+    //     || {
+    //         iter2.next();
+    //     },
+    // );
 
-    perf.test(
-        "clear",
-        1,
-        || {
-            l1.clear();
-        },
-        || {
-            l2.clear();
-        },
-    );
+    // perf.test(
+    //     "clear",
+    //     1,
+    //     || {
+    //         l1.clear();
+    //     },
+    //     || {
+    //         l2.clear();
+    //     },
+    // );
 }
 
 #[allow(dead_code)]

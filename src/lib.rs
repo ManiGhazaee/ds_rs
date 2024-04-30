@@ -5,7 +5,6 @@ pub mod linked_list;
 pub mod matrix;
 pub mod queue;
 pub mod stack;
-pub mod tree;
 
 /// t1: len,
 /// t2: element

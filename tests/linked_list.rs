@@ -380,7 +380,7 @@ fn test_remove() {
 
 #[test]
 fn test_change() {
-    let mut l = LinkedList::new(); 
+    let mut l = LinkedList::new();
 
     l.push_back(1);
     l.push_back(2);
@@ -423,4 +423,139 @@ fn test_change_panic() {
     let mut l = LinkedList::new();
     l.push_back(1);
     l.change(2, 0);
+}
+
+#[test]
+fn test_push_pop_insert_get_rawptr() {
+    let mut l = ds_rs::linked_list::rawptr::LinkedList::new();
+
+    assert!(l.is_empty());
+    assert_eq!(l.len(), 0);
+    assert_eq!(l.front(), None);
+    assert_eq!(l.back(), None);
+    // assert!(!l.contains("1"));
+
+    l.push_front("1");
+
+    assert!(!l.is_empty());
+    assert_eq!(l.len(), 1);
+    assert_eq!(l.get(0), Some(&"1"));
+    assert_eq!(l.get(1), None);
+    assert_eq!(l.front(), Some(&"1"));
+    assert_eq!(l.back(), Some(&"1"));
+
+    assert_eq!(l.pop_back(), Some("1"));
+
+    assert!(l.is_empty());
+    assert_eq!(l.len(), 0);
+    assert_eq!(l.get(0), None);
+    assert_eq!(l.get(1), None);
+    assert_eq!(l.front(), None);
+    assert_eq!(l.back(), None);
+    // assert!(!l.contains("1"));
+
+    l.push_front("1");
+    assert_eq!(l.pop_front(), Some("1"));
+
+    assert!(l.is_empty());
+    assert_eq!(l.len(), 0);
+    assert_eq!(l.get(0), None);
+    assert_eq!(l.get(1), None);
+    assert_eq!(l.front(), None);
+    assert_eq!(l.back(), None);
+    // assert!(!l.contains("1"));
+
+    l.push_back("1");
+
+    assert!(!l.is_empty());
+    assert_eq!(l.len(), 1);
+    assert_eq!(l.get(0), Some(&"1"));
+    assert_eq!(l.get(1), None);
+    assert_eq!(l.front(), Some(&"1"));
+    assert_eq!(l.back(), Some(&"1"));
+
+    assert_eq!(l.pop_back(), Some("1"));
+
+    assert!(l.is_empty());
+    assert_eq!(l.len(), 0);
+    assert_eq!(l.get(0), None);
+    assert_eq!(l.get(1), None);
+    assert_eq!(l.front(), None);
+    assert_eq!(l.back(), None);
+    // assert!(!l.contains("1"));
+
+    l.push_back("1");
+    assert_eq!(l.pop_front(), Some("1"));
+
+    assert!(l.is_empty());
+    assert_eq!(l.len(), 0);
+    assert_eq!(l.get(0), None);
+    assert_eq!(l.get(1), None);
+    assert_eq!(l.front(), None);
+    assert_eq!(l.back(), None);
+    // assert!(!l.contains("1"));
+
+    // testing len = 2 pop
+    l.push_back("1");
+    l.push_back("2");
+
+    assert!(!l.is_empty());
+    assert_eq!(l.len(), 2);
+    assert_eq!(l.get(0), Some(&"1"));
+    assert_eq!(l.get(1), Some(&"2"));
+    assert_eq!(l.front(), Some(&"1"));
+    assert_eq!(l.back(), Some(&"2"));
+
+    assert_eq!(l.pop_back(), Some("2"));
+
+    assert!(!l.is_empty());
+    assert_eq!(l.len(), 1);
+    assert_eq!(l.get(0), Some(&"1"));
+    assert_eq!(l.get(1), None);
+    assert_eq!(l.front(), Some(&"1"));
+    assert_eq!(l.back(), Some(&"1"));
+
+    l.clear();
+    assert!(l.is_empty());
+
+    l.push_back("1");
+    l.push_back("2");
+    assert_eq!(l.pop_front(), Some("1"));
+
+    assert_eq!(l.len(), 1);
+    assert_eq!(l.get(0), Some(&"2"));
+    assert_eq!(l.get(1), None);
+    assert_eq!(l.front(), Some(&"2"));
+    assert_eq!(l.back(), Some(&"2"));
+
+    l.clear();
+
+    l.push_back("2");
+    l.push_front("1");
+    l.push_back("3");
+    l.push_front("0");
+    l.push_back("4");
+
+    assert_eq!(l.get(0), Some(&"0"));
+    assert_eq!(l.get(1), Some(&"1"));
+    assert_eq!(l.get(2), Some(&"2"));
+    assert_eq!(l.get(3), Some(&"3"));
+    assert_eq!(l.get(4), Some(&"4"));
+    assert_eq!(l.get(5), None);
+
+    // l.insert(0, "x");
+    // l.insert(4, "y");
+    // l.insert(5, "z");
+
+    // assert_eq!(l.get(0), Some(&"x"));
+    // assert_eq!(l.get(1), Some(&"0"));
+    // assert_eq!(l.get(2), Some(&"1"));
+    // assert_eq!(l.get(3), Some(&"2"));
+    // assert_eq!(l.get(4), Some(&"y"));
+    // assert_eq!(l.get(5), Some(&"z"));
+    // assert_eq!(l.get(6), Some(&"3"));
+    // assert_eq!(l.get(7), Some(&"4"));
+    // assert_eq!(l.get(8), None);
+    // assert_eq!(l.front(), Some(&"x"));
+    // assert_eq!(l.back(), Some(&"4"));
 }

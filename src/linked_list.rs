@@ -311,3 +311,175 @@ fn option_rc_clone<T>(option: Option<&Rc<T>>) -> Option<Rc<T>> {
         None => None,
     }
 }
+
+pub mod rawptr {
+    struct Node<T> {
+        val: T,
+        next: Option<*mut Node<T>>,
+        prev: Option<*mut Node<T>>,
+    }
+
+    impl<T: Default> Default for Node<T> {
+        fn default() -> Self {
+            Self {
+                val: Default::default(),
+                next: Default::default(),
+                prev: Default::default(),
+            }
+        }
+    }
+
+    #[derive(Debug)]
+    pub struct LinkedList<T> {
+        front: Option<*mut Node<T>>,
+        back: Option<*mut Node<T>>,
+        size: usize,
+    }
+
+    impl<T> LinkedList<T> {
+        pub fn new() -> Self {
+            Self {
+                front: None,
+                back: None,
+                size: 0,
+            }
+        }
+
+        pub fn is_empty(&self) -> bool {
+            self.size == 0
+        }
+
+        pub fn len(&self) -> usize {
+            self.size
+        }
+
+        pub fn front(&self) -> Option<&T> {
+            if let Some(f) = self.front {
+                unsafe { Some(&(*f).val) }
+            } else {
+                None
+            }
+        }
+        pub fn back(&self) -> Option<&T> {
+            if let Some(b) = self.back {
+                unsafe { Some(&(*b).val) }
+            } else {
+                None
+            }
+        }
+
+        pub fn push_back(&mut self, val: T) {
+            let node = Node {
+                val,
+                next: None,
+                prev: self.back,
+            };
+            let b = Box::new(node);
+            let node = Box::leak(b);
+            if self.is_empty() {
+                self.back = Some(node);
+                self.front = Some(node);
+            } else {
+                unsafe {
+                    (*self.back.unwrap()).next = Some(node);
+                    self.back = Some(node);
+                }
+            }
+            self.size += 1;
+        }
+
+        pub fn push_front(&mut self, val: T) {
+            let node = Node {
+                val,
+                next: self.front,
+                prev: None,
+            };
+            let b = Box::new(node);
+            let node = Box::leak(b);
+            if self.is_empty() {
+                self.back = Some(node);
+                self.front = Some(node);
+            } else {
+                unsafe {
+                    (*self.front.unwrap()).prev = Some(node);
+                    self.front = Some(node);
+                }
+            }
+            self.size += 1;
+        }
+
+        pub fn pop_back(&mut self) -> Option<T> {
+            if self.is_empty() {
+                return None;
+            }
+            unsafe {
+                let temp = self.back.take();
+                self.back = (*temp.unwrap()).prev;
+                if self.back.is_some() {
+                    (*self.back.unwrap()).next = None;
+                }
+                let temp = Box::from_raw(&mut (*temp.unwrap()));
+                let ret = temp.val;
+                self.size -= 1;
+                if self.size == 0 {
+                    self.front.take();
+                }
+                Some(ret)
+            }
+        }
+
+        pub fn pop_front(&mut self) -> Option<T> {
+            if self.is_empty() {
+                return None;
+            }
+            unsafe {
+                let temp = self.front.take();
+                self.front = (*temp.unwrap()).next;
+                if self.front.is_some() {
+                    (*self.front.unwrap()).prev = None;
+                }
+                let temp = Box::from_raw(&mut (*temp.unwrap()));
+                let ret = temp.val;
+                self.size -= 1;
+                if self.size == 0 {
+                    self.back.take();
+                }
+                Some(ret)
+            }
+        }
+
+        pub fn get(&self, index: usize) -> Option<&T> {
+            let mut temp = self.front;
+            let mut i = 0;
+            while i < index {
+                if let Some(n) = temp {
+                    unsafe {
+                        temp = (*n).next;
+                    }
+                } else {
+                    return None;
+                }
+                i += 1;
+            }
+            if let Some(n) = temp {
+                unsafe { Some(&(*n).val) }
+            } else {
+                None
+            }
+        }
+
+        pub fn clear(&mut self) {
+            let mut temp = self.front;
+            while let Some(n) = temp {
+                unsafe {
+                    let b = Box::from_raw(n);
+                    temp = b.next;
+                    drop(b);
+                }
+            }
+            self.front.take();
+            self.back.take();
+            self.size = 0;
+        }
+    }
+}
