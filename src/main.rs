@@ -58,29 +58,29 @@ fn linked_list() {
         },
     );
 
-    // let mut iter1 = l1.iter();
-    // let mut iter2 = l2.iter();
-    // perf.test(
-    //     "iter",
-    //     900,
-    //     || {
-    //         iter1.next();
-    //     },
-    //     || {
-    //         iter2.next();
-    //     },
-    // );
+    let mut iter1 = l1.iter();
+    let mut iter2 = l2.iter();
+    perf.test(
+        "iter",
+        900,
+        || {
+            iter1.next();
+        },
+        || {
+            iter2.next();
+        },
+    );
 
-    // perf.test(
-    //     "clear",
-    //     1,
-    //     || {
-    //         l1.clear();
-    //     },
-    //     || {
-    //         l2.clear();
-    //     },
-    // );
+    perf.test(
+        "clear",
+        1,
+        || {
+            l1.clear();
+        },
+        || {
+            l2.clear();
+        },
+    );
 }
 
 #[allow(dead_code)]

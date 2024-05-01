@@ -313,10 +313,24 @@ fn option_rc_clone<T>(option: Option<&Rc<T>>) -> Option<Rc<T>> {
 }
 
 pub mod rawptr {
+    use std::marker::PhantomData;
+
     struct Node<T> {
         val: T,
         next: Option<*mut Node<T>>,
         prev: Option<*mut Node<T>>,
+    }
+
+    impl<T> Node<T> {
+        pub fn new<'a>(
+            val: T,
+            prev: Option<*mut Node<T>>,
+            next: Option<*mut Node<T>>,
+        ) -> &'a mut Self {
+            let node = Node { val, next, prev };
+            let b = Box::new(node);
+            Box::leak(b)
+        }
     }
 
     impl<T: Default> Default for Node<T> {
@@ -368,14 +382,23 @@ pub mod rawptr {
             }
         }
 
+        pub fn front_mut(&mut self) -> Option<&mut T> {
+            if let Some(f) = self.front {
+                unsafe { Some(&mut (*f).val) }
+            } else {
+                None
+            }
+        }
+        pub fn back_mut(&mut self) -> Option<&mut T> {
+            if let Some(b) = self.back {
+                unsafe { Some(&mut (*b).val) }
+            } else {
+                None
+            }
+        }
+
         pub fn push_back(&mut self, val: T) {
-            let node = Node {
-                val,
-                next: None,
-                prev: self.back,
-            };
-            let b = Box::new(node);
-            let node = Box::leak(b);
+            let node = Node::new(val, self.back, None);
             if self.is_empty() {
                 self.back = Some(node);
                 self.front = Some(node);
@@ -389,13 +412,7 @@ pub mod rawptr {
         }
 
         pub fn push_front(&mut self, val: T) {
-            let node = Node {
-                val,
-                next: self.front,
-                prev: None,
-            };
-            let b = Box::new(node);
-            let node = Box::leak(b);
+            let node = Node::new(val, None, self.front);
             if self.is_empty() {
                 self.back = Some(node);
                 self.front = Some(node);
@@ -415,15 +432,14 @@ pub mod rawptr {
             unsafe {
                 let temp = self.back.take();
                 self.back = (*temp.unwrap()).prev;
-                if self.back.is_some() {
-                    (*self.back.unwrap()).next = None;
+                if let Some(back) = self.back {
+                    (*back).next = None;
+                } else {
+                    self.front.take();
                 }
                 let temp = Box::from_raw(&mut (*temp.unwrap()));
                 let ret = temp.val;
                 self.size -= 1;
-                if self.size == 0 {
-                    self.front.take();
-                }
                 Some(ret)
             }
         }
@@ -435,15 +451,14 @@ pub mod rawptr {
             unsafe {
                 let temp = self.front.take();
                 self.front = (*temp.unwrap()).next;
-                if self.front.is_some() {
-                    (*self.front.unwrap()).prev = None;
+                if let Some(front) = self.front {
+                    (*front).prev = None;
+                } else {
+                    self.back.take();
                 }
                 let temp = Box::from_raw(&mut (*temp.unwrap()));
                 let ret = temp.val;
                 self.size -= 1;
-                if self.size == 0 {
-                    self.back.take();
-                }
                 Some(ret)
             }
         }
@@ -468,6 +483,126 @@ pub mod rawptr {
             }
         }
 
+        pub fn get_mut(&mut self, index: usize) -> Option<&mut T> {
+            let mut temp = self.front;
+            let mut i = 0;
+            while i < index {
+                if let Some(n) = temp {
+                    unsafe {
+                        temp = (*n).next;
+                    }
+                } else {
+                    return None;
+                }
+                i += 1;
+            }
+            if let Some(n) = temp {
+                unsafe { Some(&mut (*n).val) }
+            } else {
+                None
+            }
+        }
+
+        fn get_node_mut(&mut self, index: usize) -> Option<&mut Node<T>> {
+            let mut temp = self.front;
+            let mut i = 0;
+            while i < index {
+                if let Some(n) = temp {
+                    unsafe {
+                        temp = (*n).next;
+                    }
+                } else {
+                    return None;
+                }
+                i += 1;
+            }
+            if let Some(n) = temp {
+                unsafe { Some(&mut (*n)) }
+            } else {
+                None
+            }
+        }
+
+        pub fn iter<'a>(&'a self) -> Iter<'a, T> {
+            Iter {
+                front: self.front,
+                back: self.back,
+                size: self.size,
+                marker: PhantomData,
+            }
+        }
+
+        /// # Panics
+        /// if `index > len`
+        pub fn insert(&mut self, index: usize, val: T) {
+            if index > self.size {
+                panic!("index > len");
+            }
+            if index == 0 {
+                self.push_front(val);
+                return;
+            }
+            if index == self.size {
+                self.push_back(val);
+                return;
+            }
+            if let Some(n) = self.get_node_mut(index) {
+                unsafe {
+                    let node = Node::new(val, (*n).prev, Some(n));
+                    if let Some(prev) = (*n).prev {
+                        (*prev).next = Some(node);
+                    }
+                    (*n).prev = Some(node);
+                }
+                self.size += 1;
+            }
+        }
+
+        pub fn remove(&mut self, index: usize) -> Option<T> {
+            if index >= self.size {
+                panic!("index > len");
+            }
+            if index == 0 {
+                return self.pop_front();
+            }
+            if self.size <= 1 || index == self.size - 1 {
+                return self.pop_back();
+            }
+            if let Some(n) = self.get_node_mut(index) {
+                unsafe {
+                    if let Some(prev) = (*n).prev {
+                        (*prev).next = (*n).next;
+                    }
+                    if let Some(next) = (*n).next {
+                        (*next).prev = (*n).prev;
+                    }
+                    let b = Box::from_raw(n);
+                    self.size -= 1;
+                    Some(b.val)
+                }
+            } else {
+                None
+            }
+        }
+
+        pub fn append(&mut self, other: &mut Self) {
+            unsafe {
+                if let Some(other_front) = other.front {
+                    (*other_front).prev = self.back;
+                }
+                if let Some(back) = self.back {
+                    (*back).next = other.front;
+                } else {
+                    self.front = other.front;
+                    self.back = other.back;
+                }
+                self.size += other.size;
+                other.size = 0;
+                other.front = None;
+                other.back = None;
+            }
+        }
+
         pub fn clear(&mut self) {
             let mut temp = self.front;
             while let Some(n) = temp {
@@ -480,6 +615,43 @@ pub mod rawptr {
             self.front.take();
             self.back.take();
             self.size = 0;
+        }
+    }
+
+    impl<T: PartialEq> LinkedList<T> {
+        pub fn contains(&self, val: &T) -> bool {
+            self.iter().any(|i| i == val)
+        }
+    }
+
+    #[allow(dead_code)]
+    pub struct Iter<'a, T> {
+        front: Option<*mut Node<T>>,
+        back: Option<*mut Node<T>>,
+        size: usize,
+        marker: PhantomData<&'a Node<T>>,
+    }
+
+    impl<'a, T> Iterator for Iter<'a, T> {
+        type Item = &'a T;
+
+        fn next(&mut self) -> Option<Self::Item> {
+            if self.size == 0 {
+                return None;
+            } else {
+                self.front.map(|n| unsafe {
+                    let ret = &(*n).val;
+                    self.size -= 1;
+                    self.front = (*n).next;
+                    ret
+                })
+            }
+        }
+    }
+
+    impl<T> Drop for LinkedList<T> {
+        fn drop(&mut self) {
+            self.clear();
         }
     }
 }
