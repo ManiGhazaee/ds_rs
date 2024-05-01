@@ -322,6 +322,7 @@ pub mod rawptr {
     }
 
     impl<T> Node<T> {
+        #[inline]
         pub fn new<'a>(
             val: T,
             prev: Option<*mut Node<T>>,
@@ -351,6 +352,7 @@ pub mod rawptr {
     }
 
     impl<T> LinkedList<T> {
+        #[inline]
         pub fn new() -> Self {
             Self {
                 front: None,
@@ -359,10 +361,12 @@ pub mod rawptr {
             }
         }
 
+        #[inline]
         pub fn is_empty(&self) -> bool {
             self.size == 0
         }
 
+        #[inline]
         pub fn len(&self) -> usize {
             self.size
         }
@@ -435,7 +439,7 @@ pub mod rawptr {
                 if let Some(back) = self.back {
                     (*back).next = None;
                 } else {
-                    self.front.take();
+                    self.front = None;
                 }
                 let temp = Box::from_raw(&mut (*temp.unwrap()));
                 let ret = temp.val;
@@ -454,7 +458,7 @@ pub mod rawptr {
                 if let Some(front) = self.front {
                     (*front).prev = None;
                 } else {
-                    self.back.take();
+                    self.back = None;
                 }
                 let temp = Box::from_raw(&mut (*temp.unwrap()));
                 let ret = temp.val;
@@ -463,27 +467,17 @@ pub mod rawptr {
             }
         }
 
+        #[inline]
         pub fn get(&self, index: usize) -> Option<&T> {
-            let mut temp = self.front;
-            let mut i = 0;
-            while i < index {
-                if let Some(n) = temp {
-                    unsafe {
-                        temp = (*n).next;
-                    }
-                } else {
-                    return None;
-                }
-                i += 1;
-            }
-            if let Some(n) = temp {
-                unsafe { Some(&(*n).val) }
-            } else {
-                None
-            }
+            self.iter().nth(index)
         }
 
+        #[inline]
         pub fn get_mut(&mut self, index: usize) -> Option<&mut T> {
+            self.iter_mut().nth(index)
+        }
+
+        fn get_node_mut(&mut self, index: usize) -> Option<*mut Node<T>> {
             let mut temp = self.front;
             let mut i = 0;
             while i < index {
@@ -496,40 +490,7 @@ pub mod rawptr {
                 }
                 i += 1;
             }
-            if let Some(n) = temp {
-                unsafe { Some(&mut (*n).val) }
-            } else {
-                None
-            }
-        }
-
-        fn get_node_mut(&mut self, index: usize) -> Option<&mut Node<T>> {
-            let mut temp = self.front;
-            let mut i = 0;
-            while i < index {
-                if let Some(n) = temp {
-                    unsafe {
-                        temp = (*n).next;
-                    }
-                } else {
-                    return None;
-                }
-                i += 1;
-            }
-            if let Some(n) = temp {
-                unsafe { Some(&mut (*n)) }
-            } else {
-                None
-            }
-        }
-
-        pub fn iter<'a>(&'a self) -> Iter<'a, T> {
-            Iter {
-                front: self.front,
-                back: self.back,
-                size: self.size,
-                marker: PhantomData,
-            }
+            temp
         }
 
         /// # Panics
@@ -568,21 +529,17 @@ pub mod rawptr {
             if self.size <= 1 || index == self.size - 1 {
                 return self.pop_back();
             }
-            if let Some(n) = self.get_node_mut(index) {
-                unsafe {
-                    if let Some(prev) = (*n).prev {
-                        (*prev).next = (*n).next;
-                    }
-                    if let Some(next) = (*n).next {
-                        (*next).prev = (*n).prev;
-                    }
-                    let b = Box::from_raw(n);
-                    self.size -= 1;
-                    Some(b.val)
+            self.get_node_mut(index).map(|n| unsafe {
+                if let Some(prev) = (*n).prev {
+                    (*prev).next = (*n).next;
                 }
-            } else {
-                None
-            }
+                if let Some(next) = (*n).next {
+                    (*next).prev = (*n).prev;
+                }
+                let b = Box::from_raw(n);
+                self.size -= 1;
+                b.val
+            })
         }
 
         pub fn append(&mut self, other: &mut Self) {
@@ -600,6 +557,26 @@ pub mod rawptr {
                 other.size = 0;
                 other.front = None;
                 other.back = None;
+            }
+        }
+
+        #[inline]
+        pub fn iter(&self) -> Iter<T> {
+            Iter {
+                front: self.front,
+                back: self.back,
+                size: self.size,
+                marker: PhantomData,
+            }
+        }
+
+        #[inline]
+        pub fn iter_mut(&mut self) -> IterMut<T> {
+            IterMut {
+                front: self.front,
+                back: self.back,
+                size: self.size,
+                marker: PhantomData,
             }
         }
 
@@ -625,7 +602,7 @@ pub mod rawptr {
     }
 
     #[allow(dead_code)]
-    pub struct Iter<'a, T> {
+    pub struct Iter<'a, T: 'a> {
         front: Option<*mut Node<T>>,
         back: Option<*mut Node<T>>,
         size: usize,
@@ -641,6 +618,31 @@ pub mod rawptr {
             } else {
                 self.front.map(|n| unsafe {
                     let ret = &(*n).val;
+                    self.size -= 1;
+                    self.front = (*n).next;
+                    ret
+                })
+            }
+        }
+    }
+
+    #[allow(dead_code)]
+    pub struct IterMut<'a, T: 'a> {
+        front: Option<*mut Node<T>>,
+        back: Option<*mut Node<T>>,
+        size: usize,
+        marker: PhantomData<&'a mut Node<T>>,
+    }
+
+    impl<'a, T> Iterator for IterMut<'a, T> {
+        type Item = &'a mut T;
+
+        fn next(&mut self) -> Option<Self::Item> {
+            if self.size == 0 {
+                return None;
+            } else {
+                self.front.map(|n| unsafe {
+                    let ret = &mut (*n).val;
                     self.size -= 1;
                     self.front = (*n).next;
                     ret
