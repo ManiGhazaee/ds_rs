@@ -1,11 +1,19 @@
 use std::{env, thread::Builder, time::Instant};
 
-use ds_rs::matrix::{Matrix, MatrixVec};
+use ds_rs::{
+    binary_tree::rawptr::{self, BinaryTree},
+    matrix::{Matrix, MatrixVec},
+};
 use rand::Rng;
 
 fn main() {
     env::set_var("RUST_BACKTRACE", "true");
-    linked_list();
+    let mut b: BinaryTree<usize> = rawptr::BinaryTree::new();
+    b.set_root_mut(1).set_left(2);
+    dbg!(&b);
+    dbg!(&b.root().unwrap().val());
+    dbg!(&b.root().unwrap().left().unwrap().val());
+    b.clear();
 }
 
 #[allow(dead_code)]
