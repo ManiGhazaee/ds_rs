@@ -325,3 +325,52 @@ pub fn is_max_heap<T: PartialOrd>(vec: &Vec<Node<T>>) -> bool {
 pub fn is_min_heap<T: PartialOrd>(vec: &Vec<Node<T>>) -> bool {
     is_heap_by(&vec[..], |a, b| a.partial_cmp(b).unwrap())
 }
+
+#[test]
+fn test_basic_rawptr() {
+    let mut b: ds_rs::binary_tree::rawptr::BinaryTree<char> =
+        ds_rs::binary_tree::rawptr::BinaryTree::new();
+    assert!(b.is_empty());
+
+    assert_eq!(b.root(), None);
+
+    {
+        let r = b.set_root_mut('1');
+
+        assert_eq!(r.left(), None);
+        assert_eq!(r.right(), None);
+
+        *r.val_mut() = '2';
+
+        r.set_left('3');
+        r.set_right('4');
+    }
+
+    assert_eq!(b.root().unwrap().left().unwrap().val(), &'3');
+    assert_eq!(b.root().unwrap().right().unwrap().val(), &'4');
+
+    {
+        let r = b.root_mut().unwrap();
+        r.left_mut().unwrap().set_left('7');
+    }
+
+    let ll = b.root().unwrap().left().unwrap().left().unwrap().val();
+
+    assert_eq!(ll, &'7');
+
+    let r = b.root_mut().unwrap();
+    r.right_mut().unwrap().set_right('8');
+    let rr = r.right().unwrap().right().unwrap().val();
+    assert_eq!(rr, &'8');
+
+    assert_eq!(r.right().unwrap().parent().unwrap().val(), r.val());
+    assert_eq!(r.left().unwrap().parent().unwrap().val(), r.val());
+    assert_eq!(
+        r.left().unwrap().left().unwrap().parent().unwrap().val(),
+        r.left().unwrap().val()
+    );
+
+    b.clear();
+
+    assert!(b.is_empty());
+}

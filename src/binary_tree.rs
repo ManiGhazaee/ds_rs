@@ -751,18 +751,30 @@ pub mod rawptr {
             unsafe { &mut *self.right.unwrap() }
         }
 
-        pub fn val(&self) -> &T {
+        pub const fn val(&self) -> &T {
             &self.val
         }
 
         pub fn val_mut(&mut self) -> &mut T {
             &mut self.val
         }
+
+        pub fn parent(&self) -> Option<&Self> {
+            unsafe { self.parent.map(|i| &(*i)) }
+        }
+
+        pub fn parent_mut(&mut self) -> Option<&mut Self> {
+            unsafe { self.parent.map(|i| &mut (*i)) }
+        }
     }
 
     impl<T> BinaryTree<T> {
-        pub fn new() -> Self {
+        pub const fn new() -> Self {
             Self { root: None }
+        }
+
+        pub const fn is_empty(&self) -> bool {
+            self.root.is_none()
         }
 
         pub fn root(&self) -> Option<&Node<T>> {
@@ -800,6 +812,15 @@ pub mod rawptr {
                 }
                 self.root = None;
             }
+        }
+    }
+
+    impl<T: PartialEq> PartialEq for Node<T> {
+        fn eq(&self, other: &Self) -> bool {
+            self.val == other.val
+                && self.left == other.left
+                && self.right == other.right
+                && self.parent == other.parent
         }
     }
 }

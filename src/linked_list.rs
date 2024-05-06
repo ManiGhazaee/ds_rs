@@ -353,7 +353,7 @@ pub mod rawptr {
 
     impl<T> LinkedList<T> {
         #[inline]
-        pub fn new() -> Self {
+        pub const fn new() -> Self {
             Self {
                 front: None,
                 back: None,
@@ -362,7 +362,7 @@ pub mod rawptr {
         }
 
         #[inline]
-        pub fn is_empty(&self) -> bool {
+        pub const fn is_empty(&self) -> bool {
             self.size == 0
         }
 
@@ -561,7 +561,7 @@ pub mod rawptr {
         }
 
         #[inline]
-        pub fn iter(&self) -> Iter<T> {
+        pub const fn iter(&self) -> Iter<T> {
             Iter {
                 front: self.front,
                 back: self.back,
