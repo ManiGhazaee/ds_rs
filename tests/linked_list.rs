@@ -1,4 +1,4 @@
-use ds_rs::linked_list::LinkedList;
+use ds_rs::linked_list::cell::LinkedList;
 
 #[test]
 fn test_basic() {
