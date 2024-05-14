@@ -40,6 +40,10 @@ where
         }
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.map.len() == 0
+    }
+
     pub fn get(&self, node_key: &K) -> Option<&Node<K, T, W>> {
         self.map.get(node_key)
     }
@@ -183,6 +187,86 @@ where
     pub fn bfs_iter<'a>(&'a self, start_node_key: &'a K) -> BfsIter<'a, K, T, W> {
         BfsIter::new(&self.map, start_node_key)
     }
+
+    pub fn in_outs(&self) -> HashMap<K, (isize, isize)> {
+        let mut in_outs: HashMap<K, (isize /* in */, isize /* out */)> = HashMap::new();
+        for (key, node) in self.iter() {
+            let outs = node.neibs.len();
+            if let Some(node) = in_outs.get_mut(key) {
+                (*node).1 = outs as isize;
+            } else {
+                in_outs.insert(key.clone(), (0, outs as isize));
+            }
+            for (neib, _) in node.neibs.iter() {
+                if let Some(neib) = in_outs.get_mut(neib) {
+                    (*neib).0 += 1;
+                } else {
+                    in_outs.insert(neib.clone(), (1, 0));
+                }
+            }
+        }
+        in_outs
+    }
+
+    pub fn find_eulerian_path(&self) -> Option<Vec<&K>> {
+        if !self.has_eulerian_path() {
+            return None;
+        }
+        let mut in_outs = self.in_outs();
+        let start_node = self.eulerian_path_start_node(&in_outs);
+        let mut result_path = VecDeque::new();
+        self.eulerian_path_dfs(&start_node.key, &mut in_outs, &mut result_path);
+        Some(result_path.into_iter().collect())
+    }
+
+    fn eulerian_path_dfs<'a>(
+        &'a self,
+        key: &'a K,
+        in_outs: &mut HashMap<K, (isize, isize)>,
+        path: &mut VecDeque<&'a K>,
+    ) {
+        while in_outs.get_mut(key).unwrap().1 != 0 {
+            let next_key = self.get(key).unwrap().neibs.iter().next().unwrap().0;
+            in_outs.get_mut(key).unwrap().1 -= 1;
+            in_outs.get_mut(&next_key).unwrap().0 -= 1;
+            self.eulerian_path_dfs(&next_key, in_outs, path);
+        }
+        path.push_front(key);
+    }
+
+    pub fn has_eulerian_path(&self) -> bool {
+        if self.is_empty() {
+            return false;
+        }
+        let in_outs = self.in_outs();
+        let (mut start, mut end) = (0, 0);
+        for (key, _) in self.iter() {
+            let (ins, outs) = in_outs.get(key).unwrap();
+            if (outs - ins > 1) || (ins - outs > 1) {
+                return false;
+            } else if outs - ins == 1 {
+                start += 1;
+            } else if ins - outs == 1 {
+                end += 1;
+            }
+        }
+        (end == 0 && start == 0) || (end == 1 && start == 1)
+    }
+
+    fn eulerian_path_start_node(&self, in_outs: &HashMap<K, (isize, isize)>) -> &Node<K, T, W> {
+        let mut iter = self.iter().peekable();
+        let mut start_node = iter.peek().unwrap().1;
+        while let Some((key, node)) = iter.next() {
+            let (ins, outs) = in_outs.get(key).unwrap();
+            if outs - ins == 1 {
+                return node;
+            }
+            if *outs > 0 {
+                start_node = node;
+            }
+        }
+        return start_node;
+    }
 }
 
 struct DijkstraPair<K, W>(K, W);
@@ -261,10 +345,7 @@ where
         None
     }
 
-    pub fn dijkstra_shortest_dist<'a>(
-        &self,
-        start_node_key: &'a K,
-    ) -> Vec<(&K, usize)> {
+    pub fn dijkstra_shortest_dist<'a>(&self, start_node_key: &'a K) -> Vec<(&K, usize)> {
         let mut prio: BinaryHeap<Reverse<DijkstraPair<&K, usize>>> = BinaryHeap::new();
         let mut dist: HashMap<&K, usize> = self.map.keys().map(|k| (k, usize::MAX)).collect();
         let mut visited = HashSet::new();

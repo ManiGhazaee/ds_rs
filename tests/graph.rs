@@ -221,3 +221,19 @@ fn test_bfs_iter() {
 
     assert_eq!(visited_nodes.len(), 4);
 }
+
+#[test]
+fn test_find_eulerian_path() {
+    let mut g: Graph<char, usize, usize> = Graph::new();
+    g.insert(Node::new('A', 0));
+    g.insert(Node::new('B', 0));
+    g.insert(Node::new('C', 0));
+    g.insert(Node::new('D', 0));
+    g.insert_edge('A', 'B', 1).unwrap();
+    g.insert_edge('B', 'C', 1).unwrap();
+    g.insert_edge('C', 'D', 1).unwrap();
+    g.insert_edge('D', 'B', 1).unwrap();
+
+    let eulerian_path = g.find_eulerian_path().unwrap();
+    assert_eq!(eulerian_path, vec![&'A', &'B', &'C', &'D', &'B']);
+}
