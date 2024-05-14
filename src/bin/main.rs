@@ -1,7 +1,9 @@
 use std::{env, thread::Builder, time::Instant};
 
 use ds_rs::{
-    graph::{self, Graph}, matrix::{Matrix, MatrixVec}
+    graph::{self, Graph},
+    matrix::array,
+    matrix::vec,
 };
 use rand::Rng;
 
@@ -115,11 +117,11 @@ fn matrix_mult() {
     Builder::new()
         .stack_size(1_500_000_000)
         .spawn(move || {
-            let a1 = Matrix::<f32, N, N>::from(&v1);
-            let a2 = Matrix::<f32, N, N>::from(&v2);
+            let a1 = array::Matrix::<f32, N, N>::from(&v1);
+            let a2 = array::Matrix::<f32, N, N>::from(&v2);
 
-            let av1 = MatrixVec::new(v1);
-            let av2 = MatrixVec::new(v2);
+            let av1 = vec::Matrix::new(v1);
+            let av2 = vec::Matrix::new(v2);
 
             println!("filled");
 
@@ -136,7 +138,10 @@ fn matrix_mult() {
             println!("{}", av3.get(0, 0).unwrap());
             println!("{}", av3.get(1023, 1023).unwrap());
             println!("Matrix    GFLOP/S: {}", (FLOP / elpsd1.as_secs_f32()) / 1e9);
-            println!("MatrixVec GFLOP/S: {}", (FLOP / elpsd2.as_secs_f32()) / 1e9);
+            println!(
+                "vec::Matrix GFLOP/S: {}",
+                (FLOP / elpsd2.as_secs_f32()) / 1e9
+            );
         })
         .unwrap()
         .join()
@@ -157,11 +162,11 @@ fn matrix_add() {
         .stack_size(1_500_000_000)
         .spawn(move || {
             let perf = PerfRelative::new("add", "add_par");
-            let m1 = Matrix::<f32, N, N>::from(&v1);
-            let m2 = Matrix::<f32, N, N>::from(&v2);
+            let m1 = array::Matrix::<f32, N, N>::from(&v1);
+            let m2 = array::Matrix::<f32, N, N>::from(&v2);
 
-            let mut x = Matrix::<f32, N, N>::from(&vec![vec![0.0; N]; N]);
-            let mut y = Matrix::<f32, N, N>::from(&vec![vec![0.0; N]; N]);
+            let mut x = array::Matrix::<f32, N, N>::from(&vec![vec![0.0; N]; N]);
+            let mut y = array::Matrix::<f32, N, N>::from(&vec![vec![0.0; N]; N]);
 
             perf.test("x", 1, || x = m1.add(&m2), || y = m1.add_par(&m2));
         })

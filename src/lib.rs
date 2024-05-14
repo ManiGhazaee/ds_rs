@@ -1,5 +1,5 @@
 pub mod bigint;
-pub mod binary_tree;
+pub mod tree;
 pub mod graph;
 pub mod linked_list;
 pub mod matrix;
