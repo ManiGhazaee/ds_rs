@@ -30,9 +30,10 @@ pub enum EdgeErr {
     ToNone,
 }
 
-impl<K, T, W> Graph<K, T, W>
+impl<K: Debug, T, W> Graph<K, T, W>
 where
     K: Hash + Eq + Clone,
+    W: Clone,
 {
     pub fn new() -> Self {
         Self {
@@ -57,10 +58,14 @@ where
     }
 
     /// # Returns
-    /// if map did have the node.key, old value is returned
-    /// if map did not have the node.key, None is returned
+    /// returns old value if map has the node.key
+    /// returns None if map doesn't have the node.key
     pub fn insert(&mut self, node: Node<K, T, W>) -> Option<Node<K, T, W>> {
         self.map.insert(node.key.clone(), node)
+    }
+
+    pub fn insert_node(&mut self, key: K, val: T) {
+        self.insert(Node::new(key, val));
     }
 
     pub fn remove(&mut self, node_key: K) -> Option<Node<K, T, W>> {
@@ -188,7 +193,7 @@ where
         BfsIter::new(&self.map, start_node_key)
     }
 
-    pub fn in_outs(&self) -> HashMap<K, (isize, isize)> {
+    fn in_outs(&self) -> HashMap<K, (isize, isize)> {
         let mut in_outs: HashMap<K, (isize /* in */, isize /* out */)> = HashMap::new();
         for (key, node) in self.iter() {
             let outs = node.neibs.len();
@@ -209,13 +214,19 @@ where
     }
 
     pub fn find_eulerian_path(&self) -> Option<Vec<&K>> {
-        if !self.has_eulerian_path() {
+        let mut in_outs = self.in_outs();
+        if !self._has_eulerian_path(&in_outs) || in_outs.len() == 0 {
             return None;
         }
-        let mut in_outs = self.in_outs();
         let start_node = self.eulerian_path_start_node(&in_outs);
         let mut result_path = VecDeque::new();
-        self.eulerian_path_dfs(&start_node.key, &mut in_outs, &mut result_path);
+        let mut visited_edges: HashSet<(&K, &K)> = Default::default();
+        self.eulerian_path_dfs(
+            &start_node.key,
+            &mut in_outs,
+            &mut result_path,
+            &mut visited_edges,
+        );
         Some(result_path.into_iter().collect())
     }
 
@@ -224,11 +235,17 @@ where
         key: &'a K,
         in_outs: &mut HashMap<K, (isize, isize)>,
         path: &mut VecDeque<&'a K>,
+        visited_edges: &mut HashSet<(&'a K, &'a K)>,
     ) {
-        while in_outs.get_mut(key).unwrap().1 != 0 {
-            let next_key = self.get(key).unwrap().neibs.iter().next().unwrap().0;
-            in_outs.get_mut(key).unwrap().1 -= 1;
-            self.eulerian_path_dfs(&next_key, in_outs, path);
+        while in_outs.get(&key).unwrap().1 != 0 {
+            (*in_outs.get_mut(&key).unwrap()).1 -= 1;
+            for (next_key, _) in self.get(&key).unwrap().neibs.iter() {
+                if !visited_edges.contains(&(key, next_key)) {
+                    let _ = visited_edges.insert((key, next_key));
+                    self.eulerian_path_dfs(next_key, in_outs, path, visited_edges);
+                    break;
+                }
+            }
         }
         path.push_front(key);
     }
@@ -238,6 +255,24 @@ where
             return false;
         }
         let in_outs = self.in_outs();
+        let (mut start, mut end) = (0, 0);
+        for (key, _) in self.iter() {
+            let (ins, outs) = in_outs.get(key).unwrap();
+            if (outs - ins > 1) || (ins - outs > 1) {
+                return false;
+            } else if outs - ins == 1 {
+                start += 1;
+            } else if ins - outs == 1 {
+                end += 1;
+            }
+        }
+        (end == 0 && start == 0) || (end == 1 && start == 1)
+    }
+
+    fn _has_eulerian_path(&self, in_outs: &HashMap<K, (isize, isize)>) -> bool {
+        if self.is_empty() {
+            return false;
+        }
         let (mut start, mut end) = (0, 0);
         for (key, _) in self.iter() {
             let (ins, outs) = in_outs.get(key).unwrap();
@@ -296,7 +331,7 @@ where
     }
 }
 
-impl<K, T> Graph<K, T, usize>
+impl<K: Debug, T> Graph<K, T, usize>
 where
     K: Hash + Eq + Clone,
 {
@@ -575,7 +610,7 @@ impl<K, T, W> Display for Graph<K, T, W>
 where
     K: Hash + Eq + Clone + Debug,
     T: Debug,
-    W: Debug,
+    W: Debug + Clone,
 {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         writeln!(f, "Graph {{")?;

@@ -1,6 +1,9 @@
 #![cfg(test)]
 
-use ds_rs::graph::hash_map::{Edge, EdgeErr, Graph, Node};
+use ds_rs::{
+    circular_slice_assert_eq,
+    graph::hash_map::{Edge, EdgeErr, Graph, Node},
+};
 
 #[test]
 fn test_basic() {
@@ -8,7 +11,7 @@ fn test_basic() {
     assert_eq!(g.nodes_len(), 0);
     assert_eq!(g.edges_len(), 0);
 
-    g.insert(Node::new(1, '3'));
+    g.insert_node(1, '3');
 
     assert_eq!(g.get(&1), Some(&Node::new(1, '3')));
     assert!(g.get(&1).unwrap().neighbors().is_empty());
@@ -26,7 +29,7 @@ fn test_basic() {
         _ => panic!(),
     }
 
-    g.insert(Node::new(2, '8'));
+    g.insert_node(2, '8');
     g.insert_edge(2, 1, 200).unwrap();
     g.insert_edge(1, 2, 400).unwrap();
 
@@ -46,12 +49,12 @@ fn test_basic() {
 fn test_iter() {
     let mut g: Graph<i32, i32, i32> = Graph::new();
 
-    g.insert(Node::new(0, 0));
-    g.insert(Node::new(1, 1));
-    g.insert(Node::new(2, 2));
-    g.insert(Node::new(3, 3));
-    g.insert(Node::new(4, 4));
-    g.insert(Node::new(5, 5));
+    g.insert_node(0, 0);
+    g.insert_node(1, 1);
+    g.insert_node(2, 2);
+    g.insert_node(3, 3);
+    g.insert_node(4, 4);
+    g.insert_node(5, 5);
 
     let mut res = Vec::new();
     let mut res_nodes = Vec::new();
@@ -79,8 +82,8 @@ fn test_iter() {
 fn test_get_weight() {
     let mut g: Graph<i32, i32, i32> = Graph::new();
 
-    g.insert(Node::new(0, 2));
-    g.insert(Node::new(1, 4));
+    g.insert_node(0, 2);
+    g.insert_node(1, 4);
 
     g.insert_edge(0, 1, -2).unwrap();
     g.insert_edge(1, 0, -4).unwrap();
@@ -225,10 +228,10 @@ fn test_bfs_iter() {
 #[test]
 fn test_find_eulerian_path() {
     let mut g: Graph<char, usize, usize> = Graph::new();
-    g.insert(Node::new('A', 0));
-    g.insert(Node::new('B', 0));
-    g.insert(Node::new('C', 0));
-    g.insert(Node::new('D', 0));
+    g.insert_node('A', 0);
+    g.insert_node('B', 0);
+    g.insert_node('C', 0);
+    g.insert_node('D', 0);
     g.insert_edge('A', 'B', 1).unwrap();
     g.insert_edge('B', 'C', 1).unwrap();
     g.insert_edge('C', 'D', 1).unwrap();
@@ -236,4 +239,34 @@ fn test_find_eulerian_path() {
 
     let eulerian_path = g.find_eulerian_path().unwrap();
     assert_eq!(eulerian_path, vec![&'A', &'B', &'C', &'D', &'B']);
+
+    g.clear();
+
+    g.insert_node('a', 0);
+    g.insert_node('b', 0);
+    g.insert_node('c', 0);
+    g.insert_node('d', 0);
+    g.insert_node('e', 0);
+    g.insert_edge('a', 'b', 1).unwrap();
+    g.insert_edge('b', 'c', 1).unwrap();
+    g.insert_edge('c', 'd', 1).unwrap();
+    g.insert_edge('d', 'b', 1).unwrap();
+    g.insert_edge('b', 'e', 1).unwrap();
+    g.insert_edge('e', 'a', 1).unwrap();
+
+    let mut eulerian_path = g.find_eulerian_path().unwrap();
+    eulerian_path.pop(); // for circular assertion
+    circular_slice_assert_eq(&eulerian_path, &vec![&'d', &'b', &'e', &'a', &'b', &'c']);
+
+    g.clear();
+
+    g.insert_node('a', 0);
+    g.insert_edge('a', 'a', 1).unwrap();
+
+    let mut eulerian_path = g.find_eulerian_path().unwrap();
+    eulerian_path.pop(); // for circular assertion
+    circular_slice_assert_eq(&eulerian_path, &vec![&'a']);
+
+    g.clear();
+    assert_eq!(g.find_eulerian_path(), None);
 }

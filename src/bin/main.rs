@@ -1,9 +1,8 @@
 use std::{env, thread::Builder, time::Instant};
 
-use ds_rs::{
-    matrix::array,
-    matrix::vec,
-};
+use ds_rs::
+    matrix::{array, vec}
+;
 use rand::Rng;
 
 fn main() {
