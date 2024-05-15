@@ -5,7 +5,7 @@ use std::{
 
 use rayon::prelude::*;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub struct Matrix<T, const M: usize, const N: usize> {
     arr: [[T; N]; M],
 }

@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use ds_rs::graph::{Edge, EdgeErr, Graph, Node};
+use ds_rs::graph::hash_map::{Edge, EdgeErr, Graph, Node};
 
 #[test]
 fn test_basic() {

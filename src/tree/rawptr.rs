@@ -139,3 +139,9 @@ impl<T: PartialEq> PartialEq for Node<T> {
             && self.parent == other.parent
     }
 }
+
+impl<T> Drop for BinaryTree<T> {
+    fn drop(&mut self) {
+        self.clear();
+    }
+}

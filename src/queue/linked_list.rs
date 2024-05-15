@@ -91,6 +91,14 @@ impl<T> Queue<T> {
         self.back.map(|i| unsafe { &(*i).val })
     }
 
+    pub fn front_mut(&mut self) -> Option<&mut T> {
+        self.front.map(|i| unsafe { &mut (*i).val })
+    }
+
+    pub fn back_mut(&mut self) -> Option<&mut T> {
+        self.back.map(|i| unsafe { &mut (*i).val })
+    }
+
     /// iterates from front to back
     pub const fn iter<'a>(&'a self) -> Iter<'a, T> {
         Iter {

@@ -91,6 +91,14 @@ impl<T: Default, const L: usize> Queue<T, L> {
         self.get(self.back)
     }
 
+    pub fn front_mut(&mut self) -> Option<&mut T> {
+        self.get_mut(self.front)
+    }
+
+    pub fn back_mut(&mut self) -> Option<&mut T> {
+        self.get_mut(self.back)
+    }
+
     /// iterates from front to back
     pub const fn iter<'a>(&'a self) -> Iter<'a, T, L> {
         Iter {
@@ -130,6 +138,14 @@ impl<T: Default, const L: usize> Queue<T, L> {
     const fn get(&self, index: usize) -> Option<&T> {
         if index < L {
             Some(&self.arr[index])
+        } else {
+            None
+        }
+    }
+
+    fn get_mut(&mut self, index: usize) -> Option<&mut T> {
+        if index < L {
+            Some(&mut self.arr[index])
         } else {
             None
         }

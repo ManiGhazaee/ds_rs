@@ -1,7 +1,6 @@
 use std::{env, thread::Builder, time::Instant};
 
 use ds_rs::{
-    graph::{self, Graph},
     matrix::array,
     matrix::vec,
 };
@@ -9,18 +8,6 @@ use rand::Rng;
 
 fn main() {
     env::set_var("RUST_BACKTRACE", "true");
-    let mut g: Graph<char, usize, usize> = Graph::new();
-    g.insert(graph::Node::new('A', 0));
-    g.insert(graph::Node::new('B', 0));
-    g.insert(graph::Node::new('C', 0));
-    g.insert(graph::Node::new('D', 0));
-    g.insert_edge('A', 'B', 1).unwrap();
-    g.insert_edge('B', 'C', 1).unwrap();
-    g.insert_edge('C', 'D', 1).unwrap();
-    g.insert_edge('D', 'B', 1).unwrap();
-
-    let x = g.find_eulerian_path();
-    dbg!(x);
 }
 
 #[allow(dead_code)]
