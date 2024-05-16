@@ -22,14 +22,17 @@ impl<T: Clone> LinkedList<T> {
             size: 0,
         }
     }
+
     #[inline]
     pub const fn is_empty(&self) -> bool {
         self.size == 0
     }
+
     #[inline]
     pub const fn len(&self) -> usize {
         self.size
     }
+
     pub fn push_back(&mut self, val: T) {
         let new_node = Rc::new(RefCell::new(Node {
             val,
@@ -47,6 +50,7 @@ impl<T: Clone> LinkedList<T> {
         }
         self.size += 1;
     }
+
     pub fn push_front(&mut self, val: T) {
         let new_node = Rc::new(RefCell::new(Node {
             val,
@@ -63,6 +67,7 @@ impl<T: Clone> LinkedList<T> {
         }
         self.size += 1;
     }
+
     pub fn pop_front(&mut self) -> Option<T> {
         if !self.is_empty() {
             if self.len() == 1 {
@@ -82,6 +87,7 @@ impl<T: Clone> LinkedList<T> {
         }
         None
     }
+
     pub fn pop_back(&mut self) -> Option<T> {
         if !self.is_empty() {
             if self.len() == 1 {
@@ -101,18 +107,7 @@ impl<T: Clone> LinkedList<T> {
         }
         None
     }
-    pub fn clear(&mut self) {
-        let mut current_node = self.front.take();
-        while let Some(node) = current_node {
-            if let Some(next) = node.borrow_mut().next.take() {
-                current_node = Some(next);
-            } else {
-                break;
-            }
-        }
-        self.back = None;
-        self.size = 0;
-    }
+
     /// # Panics
     /// if `index > len`
     pub fn insert(&mut self, index: usize, val: T) {
@@ -142,9 +137,11 @@ impl<T: Clone> LinkedList<T> {
 
         self.size += 1;
     }
+
     pub fn get(&self, index: usize) -> Option<T> {
         self.node_val(self.get_rc(index).as_ref())
     }
+
     fn get_rc(&self, index: usize) -> Option<Rc<RefCell<Node<T>>>> {
         if index >= self.size {
             return None;
@@ -160,14 +157,17 @@ impl<T: Clone> LinkedList<T> {
         }
         temp
     }
+
     #[inline]
     pub fn front(&self) -> Option<T> {
         self.node_val(self.front.as_ref())
     }
+
     #[inline]
     pub fn back(&self) -> Option<T> {
         self.node_val(self.back.as_ref())
     }
+
     pub fn append(&mut self, other: &mut LinkedList<T>) {
         if let Some(other_front) = self.clone_node(other.front.as_ref()) {
             other_front.borrow_mut().prev = self.clone_node(self.back.as_ref());
@@ -186,6 +186,7 @@ impl<T: Clone> LinkedList<T> {
         other.back = None;
         other.front = None;
     }
+
     /// # Panics
     /// if `index >= len`
     pub fn remove(&mut self, index: usize) -> Option<T> {
@@ -213,6 +214,7 @@ impl<T: Clone> LinkedList<T> {
         self.size -= 1;
         self.node_val(current.as_ref())
     }
+
     /// # Panics
     /// if `index >= len`
     pub fn change(&mut self, index: usize, new_val: T) {
@@ -222,10 +224,12 @@ impl<T: Clone> LinkedList<T> {
         let node = self.get_rc(index).unwrap();
         node.borrow_mut().val = new_val;
     }
+
     #[inline]
     fn clone_node(&self, node: Option<&Rc<RefCell<Node<T>>>>) -> Option<Rc<RefCell<Node<T>>>> {
         option_rc_clone(node)
     }
+
     #[inline]
     fn node_val(&self, node: Option<&Rc<RefCell<Node<T>>>>) -> Option<T> {
         if let Some(node) = node {
@@ -236,7 +240,22 @@ impl<T: Clone> LinkedList<T> {
     }
 }
 
-impl<T: PartialEq> LinkedList<T> {
+impl<T> LinkedList<T> {
+    pub fn clear(&mut self) {
+        let mut current_node = self.front.take();
+        while let Some(node) = current_node {
+            if let Some(next) = node.borrow_mut().next.take() {
+                current_node = Some(next);
+            } else {
+                break;
+            }
+        }
+        self.back = None;
+        self.size = 0;
+    }
+}
+
+impl<T: PartialEq + Clone> LinkedList<T> {
     pub fn contains(&self, val: T) -> bool {
         let mut temp = self.front.clone();
         while let Some(n) = temp {
@@ -309,5 +328,11 @@ fn option_rc_clone<T>(option: Option<&Rc<T>>) -> Option<Rc<T>> {
     match option {
         Some(val) => Some(Rc::clone(val)),
         None => None,
+    }
+}
+
+impl<T> Drop for LinkedList<T> {
+    fn drop(&mut self) {
+        self.clear();
     }
 }

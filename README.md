@@ -1,88 +1,37 @@
 # Data Structures in Rust
 
-## Linked List
+This library is primarily for my own **educational purposes**. The implementations provided may **not** be the most efficient or best practices for production use. If you intend to use any part of this library, reviewing the **source code** is recommended.
 
-[source](./src/linked_list.rs)
+## Available Data Structures 
 
-### `LinkedList<T>`:
+- **LinkedList**
+    - with raw pointers [`ds_rs::linked_list::rawptr`](./src/linked_list/rawptr.rs)
+    - with `Cell` & `RefCell` [`ds_rs::linked_list::cell`](./src/linked_list/cell.rs)
+- **Graph**
+    - with `HashMap` [`ds_rs::graph::hash_map`](./src/graph/hash_map.rs)
+    - with adjacency matrix [`ds_rs::graph::matrix`](./src/graph/matrix.rs)
+- **Tree**
+    - BinrayTree with raw pointers [`ds_rs::tree::rawptr`](./src/tree/rawptr.rs)
+    - BinrayTree with `Cell` & `RefCell` [`ds_rs::tree::cell`](./src/tree/cell.rs)
+- **Matrix**
+    - with array [`ds_rs::matrix::array`](./src/matrix/array.rs)
+    - with `Vec` [`ds_rs::matrix::vec`](./src/matrix/vec.rs)
+- **Queue**
+    - with array [`ds_rs::queue::array`](./src/queue/array.rs)
+    - with linked list [`ds_rs::queue::linked_list`](./src/queue/linked_list.rs)
+- **Stack**
+    - with array [`ds_rs::stack::array`](./src/stack/array.rs)
+    - with linked list [`ds_rs::stack::linked_list`](./src/stack/linked_list.rs)
+- **BigInt** 
+    - with `Vec` [`ds_rs::bigint`](./src/bigint/mod.rs)
 
-| Method | Time Complexity |
-| ------ | --------------- |
-| `new() -> Self`| *O*(1) 
-| `is_empty() -> bool`| *O*(1) 
-| `len() -> usize`| *O*(1) 
-| `back() -> Option<T>`| *O*(1) 
-| `front() -> Option<T>`| *O*(1) 
-| `push_back(val: T)`| *O*(1) 
-| `push_front(val: T)`| *O*(1) 
-| `pop_back() -> Option<T>`| *O*(1) 
-| `pop_front() -> Option<T>`| *O*(1) 
-| `append(other: &mut LinkedList<T>)`| *O*(1) 
-| `clear()`| *O*(n) 
-| `insert(index: usize, val: T)`| *O*(n) 
-| `get(index: usize) -> Option<T>`| *O*(n) 
-| `remove(index: usize) -> Option<T>`| *O*(n) 
-| `change(index: usize)`| *O*(n) 
+---
 
-## Binary Tree
-
-### `BinaryTree<T>`:
-
-| Method | Time Complexity |
-| ------ | --------------- |
-| `new() -> Self`| *O*(1) 
-| `with_capacity(capacity: usize) -> Self`| *O*(1)?
-| `is_empty() -> bool`| *O*(1) 
-| `len() -> usize`| *O*(1) 
-| `capacity() -> usize`| *O*(1) 
-| `push(val: T)`| *O*(1) 
-| `pop()`| *O*(1) 
-| `root() -> Node<T>`| *O*(1) 
-| `set_root(val: T) -> Node<T>`| *O*(1) 
-| `clear()`| *O*(1)? 
-| `as_vec() -> Vec<Node<T>>`| *O*(n) 
-| `as_vec_raw() -> Vec<Option<Rc<T>>>`| *O*(n) 
-| `is_heap_by<F: Fn(&T, &T) -> Ordering>(compare: F) -> bool`| *O*(n) 
-| `is_max_heap() -> bool`| *O*(n) 
-| `is_min_heap() -> bool`| *O*(n) 
-| `heapify_by<F: Fn(&T, &T) -> Ordering>(compare: F)`| *O*(n log(n)) 
-| `heapify_min()`| *O*(n log(n)) 
-| `heapify_max()`| *O*(n log(n)) 
-| `into_sorted_vec_by<F: Fn(&T, &T) -> Ordering>(compare: F) -> Vec<T>`| *O*(n log(n)) 
-| `into_sorted_vec() -> Vec<T>`| *O*(n log(n)) 
-| `into_vec() -> Vec<T>`| *O*(n) 
-| `from(value: [T; N]) -> Self`| *O*(n) 
-| `from(value: &[T]) -> Self`| *O*(n) 
-| `from(value: Vec<T>) -> Self`| *O*(n) 
-
-
-### `Node<T>`:
-
-| Method | Time Complexity |
-| ------ | --------------- |
-| `left() -> Node<T>`| *O*(1) 
-| `right() -> Node<T>`| *O*(1) 
-| `parent() -> Node<T>`| *O*(1) 
-| `val() -> Option<Rc<T>>`| *O*(1) 
-| `change(new_val: T)`| *O*(1) 
-| `is_root() -> bool`| *O*(1) 
-| `val_clone() -> Option<T>`| *O*(1) 
-| `set_left(val: T) -> Self`| *O*(1) 
-| `set_right(val: T) -> Self`| *O*(1) 
-
-## Queue
-
-### `Queue<T>`:
-
-| Method | Time Complexity |
-| ------ | --------------- |
-| `new(capacity: usize) -> Self`| *O*(1) 
-| `is_empty() -> bool`| *O*(1) 
-| `is_full() -> bool`| *O*(1) 
-| `size() -> usize`| *O*(1) 
-| `capacity() -> usize`| *O*(1) 
-| `tail() -> Option<&T>`| *O*(1) 
-| `head() -> Option<&T>`| *O*(1) 
-| `enq() -> Result<(), ()>`| *O*(n) 
-| `deq() -> Result<(), ()>`| *O*(1) 
-| `deq_all()`| *O*(n) 
+- **Tests**
+    - [`linked_list`](./tests/linked_list.rs)
+    - [`graph`](./tests/graph.rs)
+    - [`tree`](./tests/tree.rs)
+    - [`matrix`](./tests/matrix.rs)
+    - [`queue`](./tests/queue.rs)
+    - [`stack`](./tests/stack.rs)
+    - [`bigint`](./tests/bigint.rs)

@@ -33,7 +33,6 @@ pub enum EdgeErr {
 impl<K: Debug, T, W> Graph<K, T, W>
 where
     K: Hash + Eq + Clone,
-    W: Clone,
 {
     pub fn new() -> Self {
         Self {
@@ -241,7 +240,7 @@ where
             (*in_outs.get_mut(&key).unwrap()).1 -= 1;
             for (next_key, _) in self.get(&key).unwrap().neibs.iter() {
                 if !visited_edges.contains(&(key, next_key)) {
-                    let _ = visited_edges.insert((key, next_key));
+                    visited_edges.insert((key, next_key));
                     self.eulerian_path_dfs(next_key, in_outs, path, visited_edges);
                     break;
                 }
