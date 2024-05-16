@@ -1,5 +1,7 @@
 #![cfg(test)]
 
+use pretty_assertions::assert_eq;
+
 #[test]
 fn test_matrix_mult() {
     let m1 = ds_rs::matrix::array::Matrix::new([[1, 2, 3], [4, 5, 6], [7, 8, 9]]);

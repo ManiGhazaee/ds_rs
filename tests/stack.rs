@@ -1,3 +1,5 @@
+use pretty_assertions::assert_eq;
+
 #[test]
 fn test_push_and_pop() {
     let mut stack = ds_rs::stack::array::Stack::<i32, 3>::new();

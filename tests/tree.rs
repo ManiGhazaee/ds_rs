@@ -2,6 +2,7 @@
 use std::{cmp::Ordering, rc::Rc};
 
 use ds_rs::tree::cell::{BinaryTree, Node};
+use pretty_assertions::assert_eq;
 
 #[test]
 fn test_basic() {
@@ -328,8 +329,7 @@ pub fn is_min_heap<T: PartialOrd>(vec: &Vec<Node<T>>) -> bool {
 
 #[test]
 fn test_basic_rawptr() {
-    let mut b: ds_rs::tree::rawptr::BinaryTree<char> =
-        ds_rs::tree::rawptr::BinaryTree::new();
+    let mut b: ds_rs::tree::rawptr::BinaryTree<char> = ds_rs::tree::rawptr::BinaryTree::new();
     assert!(b.is_empty());
 
     assert_eq!(b.root(), None);

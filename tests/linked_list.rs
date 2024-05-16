@@ -1,4 +1,5 @@
 use ds_rs::linked_list::cell::LinkedList;
+use pretty_assertions::assert_eq;
 
 #[test]
 fn test_basic() {

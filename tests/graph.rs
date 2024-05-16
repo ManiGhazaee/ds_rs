@@ -1,9 +1,7 @@
 #![cfg(test)]
 
-use ds_rs::{
-    circular_slice_assert_eq,
-    graph::hash_map::{Edge, EdgeErr, Graph, Node},
-};
+use ds_rs::graph::hash_map::{Edge, EdgeErr, Graph, Node};
+use pretty_assertions::assert_eq;
 
 #[test]
 fn test_basic() {
@@ -269,4 +267,34 @@ fn test_find_eulerian_path() {
 
     g.clear();
     assert_eq!(g.find_eulerian_path(), None);
+}
+
+fn circular_slice_assert_eq<T: Clone + PartialEq + std::fmt::Debug>(x: &[T], y: &[T]) {
+    let mut vx = x.to_vec();
+    let vy = y.to_vec();
+
+    if vx.len() != vy.len() {
+        panic!(
+            "circular_slice assertion failed\nleft:  {:?}\nright: {:?}",
+            vx, vy
+        );
+    }
+    if vx.len() < 2 {
+        return;
+    }
+
+    let mut eq = false;
+    for _ in 0..vx.len() {
+        if vx == vy {
+            eq = true
+        }
+        let last = vx.pop().unwrap();
+        vx.insert(0, last);
+    }
+    if !eq {
+        panic!(
+            "circular_slice assertion failed\nleft:  {:?}\nright: {:?}",
+            vx, vy
+        );
+    }
 }
