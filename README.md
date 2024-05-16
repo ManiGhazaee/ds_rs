@@ -1,4 +1,4 @@
-# Data Structures in Rust
+# ds_rs
 
 This library is primarily for my own **educational purposes**. The implementations provided may **not** be the most efficient or best practices for production use. If you intend to use any part of this library, reviewing the **source code** is recommended.
 
